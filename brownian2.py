@@ -1,7 +1,7 @@
 import os
 import scipy.stats as SS
 import numpy.random as NR
-import numpy as NP
+import numpy as np
 from numpy import array, arange, sqrt
 
 from PSF import GaussianPSF, NumericPSF
@@ -11,22 +11,43 @@ from scroll_gui import ScrollingToolQT
 NA = 6.022141e23    # [mol^-1]
 
 class Box:
+    """The simulation box"""
     def __init__(self, x1, x2, y1, y2, z1, z2):
         self.x1, self.x2 = x1, x2
         self.y1, self.y2 = y1, y2
         self.z1, self.z2 = z1, z2
         self.b = array([[x1,x2],[y1,y2],[z1,z2]])
     def volume(self):
+        """Box volume in m^3."""
         return (self.x2-self.x1)*(self.y2-self.y1)*(self.z2-self.z1)
     def volume_L(self):
+        """Box volume in liters."""
         return self.volume()*1e3
 class Particle:
+    """Class to describe a single particle"""
     def __init__(self, x0=0, y0=0, z0=0):
         self.x0, self.y0, self.z0 = x0, y0, z0
         self.r0 = array([x0, y0, z0])
 
-class Particles_in_a_box:
+def wrap_periodic(a, a1, a2):
+    """Folds all the values of `a` outside [a1..a2] inside that intervall.
+    This function is used to apply periodic boundary contitions.
+    """
+    a -= a1
+    wrapped = mod(a, a2-a1) + a1
+    return wrapped
+
+class Particles_in_a_box(object):
+    """Class that performs the Brownian motion simulation of N particles.
+    """
     def __init__(self, D, t_step, particles, box, psf):
+        """Initialize the simulation parameters:
+        `D`: diffusion coefficient (m/s^2)
+        `t_step`: time step (s)
+        `particles`: list of `Particle` objects
+        `box`: a `Box` object defining the simulation boundaries
+        `psf`: a "PSF" object (`GaussianPSF` or `NumericPSF`) defining the PSF
+        """
         self.particles = particles
         self.box = box
         self.psf = psf
@@ -35,27 +56,37 @@ class Particles_in_a_box:
         self.t_step = t_step
         self.sigma = sqrt(2*D*3*t_step)
     def concentration(self):
+        """Return the volumetric concentration of the particles in the box.
+        """
         return (self.np/NA)/self.box.volume_L()
     def sim_motion_em(self, N_samples, delete_pos=True):
+        """Simulate Brownian motion and emission rates in one step.
+        This method simulates only one particle a time (to use less RAM).  
+        `delete_pos` allows to discard the trajectories and save only the
+        total emission rates (i.e. the sum of emissions of all the particles.)
+        """
         self.N_samples = N_samples
-        self.em = zeros((1, N_samples), dtype=float64)
+        self.em = np.zeros((1, N_samples), dtype=float64)
         POS = []
         pid = os.getpid()
         for i,p in enumerate(self.particles):
             print "[%4d] Starting particle %d..." % (pid, i)
             delta_pos = NR.normal(loc=0, scale=self.sigma, size=3*N_samples)
             delta_pos = delta_pos.reshape(3,N_samples)
-            pos = cumsum(delta_pos, axis=-1, out=delta_pos)
+            pos = np.cumsum(delta_pos, axis=-1, out=delta_pos)
             pos += p.r0.reshape(3,1)
+            # Coordinates wrapping using periodic boundary conditions
             for coord in (0,1,2):
                 pos[coord,:] = wrap_periodic(pos[coord,:], *self.box.b[coord])
-            Ro = sqrt(pos[0,:]**2+pos[1,:]**2)
-            Z = pos[2,:]
+            Ro = sqrt(pos[0,:]**2+pos[1,:]**2) # radial position on x-y plane
+            Z = pos[2,:]                       
             self.em += (self.psf.eval_xz(Ro,Z)**2)
             if not delete_pos: POS.append(pos.reshape(1,3,N_samples))
         if not delete_pos: self.pos = concatenate(POS)
     def sim_brownian_motion(self, N_samples):
-        """Simulate random walk trajectories for each particle."""
+        """Simulate random walk trajectories for all particles.
+        All the trajectories are computed with a single array (NP,3,N_samples)
+        """
         self.N_samples = N_samples
         selt.t_max = N_samples*self.t_step
         tot_size = self.np*3*N_samples
@@ -89,7 +120,7 @@ class Particles_in_a_box:
         self.em = self.psf.eval(X,Y,Z)**2 # Squared: Emission*Detection PSF
         if delete_pos: delattr(self, 'pos')
     def sim_timetrace(self, max_em_rate=1, bg_rate=0):
-        """Compute the random emission from Poisson(emission rates)."""
+        """Draw random emitted photons from Poisson(emission rates)."""
         self.bg_rate = bg_rate
         em_rates = (self.em.sum(axis=0)*max_em_rate + bg_rate)*self.t_step
         self.tt = NR.poisson(lam=em_rates).astype(uint8)
@@ -145,17 +176,11 @@ def merge_ph_times(PH, time_block):
 def forge_ph_times(ph_times_d, ph_times_a):
     """Returns the merged timestamps of D and A and a bool mask for A
     """
-    ph_times = NP.hstack([ph_times_d, ph_times_a])
-    a_em = NP.hstack([NP.zeros(ph_times_d.size, dtype=NP.bool),
-            NP.ones(ph_times_a.size, dtype=NP.bool)])
+    ph_times = np.hstack([ph_times_d, ph_times_a])
+    a_em = np.hstack([np.zeros(ph_times_d.size, dtype=np.bool),
+            np.ones(ph_times_a.size, dtype=np.bool)])
     index_sort = ph_times.argsort()
     return ph_times[index_sort], a_em[index_sort]
-
-def wrap_periodic(a, a1, a2):
-    """Folds all the values of 'a' outside [a1..a2] inside the intervall."""
-    a -= a1
-    wrapped = mod(a, a2-a1) + a1
-    return wrapped
 
 def gen_particles(N, box):
     X0 = NR.rand(N)*(box.x2-box.x1) + box.x1
