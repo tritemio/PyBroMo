@@ -83,42 +83,6 @@ class Particles_in_a_box(object):
             self.em += (self.psf.eval_xz(Ro,Z)**2)
             if not delete_pos: POS.append(pos.reshape(1,3,N_samples))
         if not delete_pos: self.pos = concatenate(POS)
-    def sim_brownian_motion(self, N_samples):
-        """Simulate random walk trajectories for all particles.
-        All the trajectories are computed with a single array (NP,3,N_samples)
-        """
-        self.N_samples = N_samples
-        selt.t_max = N_samples*self.t_step
-        tot_size = self.np*3*N_samples
-        # Let draw all the displacements for all the particles in one call
-        delta_pos = NR.normal(loc=0, scale=self.sigma, size=tot_size)
-
-        # Reshape such as the 1st dim is particle num, the 2nd the cartesian
-        # coordinate (x,y,z), and the 3rd is the series of drawn samples
-        delta_pos = delta_pos.reshape(self.np,3,N_samples)
-
-        # Compute the position from the displacements
-        # with a cumsum along the last axis (series of drawn samples)
-        # NOTE: Write the result in the same memory of delta_pos to save RAM
-        self.pos = cumsum(delta_pos, axis=-1, out=delta_pos)
-
-        # For each particle, translate the position to start at its r0
-        for i,p in enumerate(self.particles):
-            self.pos[i] += p.r0.reshape(3,1)
-        
-        # Apply the boundary conditions (box)
-        self._wrap_periodic()
-    def _wrap_periodic(self):
-        pos = self.pos
-        # For each coordinate (x,y,z) the trajectories of all the particles
-        # are wrapped in the same way by wrap_periodic
-        for coord in (0,1,2):
-            pos[:,coord,:] = wrap_periodic(pos[:,coord,:], *self.box.b[coord])
-    def cal_emission(self, delete_pos=False):
-        """Compute the emission rate as a func of time for each particle."""
-        X, Y, Z = [self.pos[:,coord,:] for coord in (0,1,2)]
-        self.em = self.psf.eval(X,Y,Z)**2 # Squared: Emission*Detection PSF
-        if delete_pos: delattr(self, 'pos')
     def sim_timetrace(self, max_em_rate=1, bg_rate=0):
         """Draw random emitted photons from Poisson(emission rates)."""
         self.bg_rate = bg_rate
