@@ -34,7 +34,7 @@ def wrap_periodic(a, a1, a2):
     This function is used to apply periodic boundary contitions.
     """
     a -= a1
-    wrapped = mod(a, a2-a1) + a1
+    wrapped = np.mod(a, a2-a1) + a1
     return wrapped
 
 class Particles_in_a_box(object):
@@ -56,31 +56,40 @@ class Particles_in_a_box(object):
         self.t_step = t_step
         self.sigma = sqrt(2*D*3*t_step)
     def concentration(self):
-        """Return the volumetric concentration of the particles in the box.
+        """Return the concentration (in Moles) of the particles in the box.
         """
         return (self.np/NA)/self.box.volume_L()
-    def sim_motion_em(self, N_samples, delete_pos=True):
+    def sim_motion_em(self, N_samples, delete_pos=True, total_emission=True):
         """Simulate Brownian motion and emission rates in one step.
         This method simulates only one particle a time (to use less RAM).  
         `delete_pos` allows to discard the trajectories and save only the
         total emission rates (i.e. the sum of emissions of all the particles.)
         """
         self.N_samples = N_samples
-        self.em = np.zeros((1, N_samples), dtype=float64)
+        if total_emission:
+            self.em = np.zeros((1,N_samples), dtype=np.float64)
+        else:
+            self.em = np.zeros((self.np,N_samples), dtype=np.float64)
         POS = []
         pid = os.getpid()
         for i,p in enumerate(self.particles):
-            print "[%4d] Starting particle %d..." % (pid, i)
+            print "[%4d] Simulating particle %d " % (pid, i)
             delta_pos = NR.normal(loc=0, scale=self.sigma, size=3*N_samples)
             delta_pos = delta_pos.reshape(3,N_samples)
             pos = np.cumsum(delta_pos, axis=-1, out=delta_pos)
             pos += p.r0.reshape(3,1)
             # Coordinates wrapping using periodic boundary conditions
             for coord in (0,1,2):
-                pos[coord,:] = wrap_periodic(pos[coord,:], *self.box.b[coord])
-            Ro = sqrt(pos[0,:]**2+pos[1,:]**2) # radial position on x-y plane
-            Z = pos[2,:]                       
-            self.em += (self.psf.eval_xz(Ro,Z)**2)
+                pos[coord] = wrap_periodic(pos[coord], *self.box.b[coord])
+            Ro = sqrt(pos[0]**2+pos[1]**2) # radial position on x-y plane
+            Z = pos[2]
+            # Add the current particle emission rates to the total (all
+            # particles) emision by sampling the PSF along th trajectory
+            # then square to account for emission and detection PSF
+            if total_emission:
+                self.em += self.psf.eval_xz(Ro,Z)**2 
+            else:
+                self.em[i] = self.psf.eval_xz(Ro,Z)**2
             if not delete_pos: POS.append(pos.reshape(1,3,N_samples))
         if not delete_pos: self.pos = concatenate(POS)
     def sim_timetrace(self, max_em_rate=1, bg_rate=0):
@@ -89,6 +98,9 @@ class Particles_in_a_box(object):
         em_rates = (self.em.sum(axis=0)*max_em_rate + bg_rate)*self.t_step
         self.tt = NR.poisson(lam=em_rates).astype(uint8)
     def gen_ph_times(self):
+        """Generate timestamps of emitted photons from the Poisson events
+        extracted by `sim_timetrace()`
+        """
         iph = arange(self.tt.size, dtype=uint32)
         PH = []
         for v in range(1,self.tt.max()+1):
@@ -105,10 +117,14 @@ class Particles_in_a_box(object):
         ph_times.sort()
         ph_times *= self.t_step
         self.ph_times = ph_times
-    def time(self):
-        if not hasattr(self, "_time"):
-            self._time = arange(self.N_samples)*self.t_step
-        return self._time
+    def time(self, dec=1):
+        """Return the time axis with decimation `dec` (memoized)
+        """
+        if not hasattr(self, "_time"): self._time = dict()
+        if not dec in self._time:
+            # Add the new time axis to the cache
+            self._time[dec] = arange(self.N_samples/dec)*(self.t_step*dec)
+        return self._time[dec]
     def dump_emission(self, prefix="trace_em", EID=0, ID=0):
         s = "%s_%dP_%ds_%.1fus_Du%d_ID%d-%d.npy" % \
             (prefix,S.np, S.N_samples*S.t_step, S.t_step*1e6, S.D*1e12, EID,ID)
@@ -184,16 +200,22 @@ def plot_tracks(S):
     AX[1].plot((rx*cos(a))*1e6, (ry*sin(a))*1e6, lw=2, color='k')
     AX[0].plot((rx*cos(a))*1e6, (rz*sin(a))*1e6, lw=2, color='k')
 
-def plot_emission(S, dec=1):
+def plot_emission(S, dec=1, scroll_gui=False, multi=False):
     fig = figure()
     title("%d Particles, %.1f s diffusion, %d pM" % (S.np,
             S.t_step*S.N_samples, S.concentration()*1e12))
     xlabel("Time (s)"); ylabel("Emission rate [A.U.]"); grid(1)
     #plot_timetrace(S, rebin=rebin)
-    plot(S.time(), S.em.sum(axis=0)[::dec], alpha=0.5)
-    s = ScrollingToolQT(fig)
+    if multi:
+        for em in S.em:
+            plot(S.time(dec=dec), em[::dec], alpha=0.5)
+    else:    
+        plot(S.time(dec=dec), S.em.sum(axis=0)[::dec], alpha=0.5)
+    s = None
+    if scroll_gui: s = ScrollingToolQT(fig)
     return s
-def plot_timetrace(S, rebin=2e3):
+
+def plot_timetrace(S, rebin=2e3, scroll_gui=False):
     fig = figure()
     title("%d Particles, %.1f s diffusion, %d pM, bin=%.1fms" % (S.np,
             S.t_step*S.N_samples, S.concentration()*1e12, S.t_step*rebin*1e3))
@@ -202,8 +224,8 @@ def plot_timetrace(S, rebin=2e3):
     t_trace = (arange(trace.size)+1)*(S.t_step*rebin)
     plot(S.time(), S.em.sum(axis=0)*100, alpha=0.4)
     plot(t_trace, trace, color='k', alpha=0.7, drawstyle='steps')
-    s = ScrollingToolQT(fig)
-    return s
+    if scroll_gui: return ScrollingToolQT(fig)
+
 def fun(S):
     S.sim_brownian_motion(N_samples)
     S.cal_emission(delete_pos=True)
@@ -235,10 +257,10 @@ if __name__ == '__main__':
     #p3 = Particle(y0=-3e-6)
     #p4 = Particle(y0=3e-6)
     #P = [p1,p2,p3,p4]
-    P = gen_particles(1, box)
+    P = gen_particles(40, box)
 
     # Particle simulation
-    S = Particles_in_a_box(D=D, t_step=t_step, particles=P, box=box, psf=psf)
+    #S = Particles_in_a_box(D=D, t_step=t_step, particles=P, box=box, psf=psf)
     #S.sim_motion_em(N_samples)
     #S.sim_timetrace(max_em_rate=3e5, bg_rate=10e3)
     #S.gen_ph_times()
