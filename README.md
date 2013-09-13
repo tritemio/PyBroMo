@@ -9,8 +9,8 @@ The excitation volume is defined numerically or analytically (3-D Gaussian
 shape). Molecules diffusing through the excitation volume will emit at a rate
 proportional to the excitation intensity.
 
-PyBroMo allows to simulate smFRET experiments with desired FRET efficiency.
-Timestamps for donor and acceptor channel are generated.
+PyBroMo allows to simulate smFRET experiments with a desired FRET efficiency.
+Timestamps for donor and acceptor channel can be generated.
 
 The PSF is numerically precomputed on a regular grid using the 
 [PSFLab](http://onemolecule.chem.uwm.edu/software) software and interpolated 
@@ -18,6 +18,8 @@ during the Brownian motion simulation in order to compute the emission
 intensity. Alternatively a simple analytical Gaussian PSF can be also used.
 
 The user documentation is in the form of a series of IPython Notebooks.
+
+For more information contact me at tritemio@gmail.com.
 
 Environment
 ==========
@@ -86,17 +88,20 @@ The following links will open (a static version of) the notebooks provided
 with PyBroMo. These collection serves both as usage examples and user guide:
 
 
-#Licence
+#Licence and Copyrights
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+PyBroMo - A single molecule diffusion simulator in confocal geometry.
+Copyright (C) 2013  Antonino Ingargiola <tritemio@gmail.com>
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You can find a full copy of the license in the file LICENSE.txt
+
