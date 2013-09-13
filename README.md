@@ -87,6 +87,17 @@ installed:
 The following links will open (a static version of) the notebooks provided
 with PyBroMo. These collection serves both as usage examples and user guide:
 
+PyBroMo - 1.1 Run simulation - Single host.ipynb
+PyBroMo - 1.2 Run simulation - Parallel.ipynb
+PyBroMo - 2. Generate timestamps - Parallel.ipynb
+PyBroMo - 3. Burst analisys.ipynb
+
+
+* 1.1 Run simulation - Single host(http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/PyBroMo%2520-%25201.1%2520Run%2520simulation%2520-%2520Single%2520host.ipynb)
+* 1.2 Run simulation - Parallel(http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/PyBroMo%2520-%25201.2%2520Run%2520simulation%2520-%2520Parallel.ipynb)
+* 2. Generate timestamps - Parallel(http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/PyBroMo%2520-%25202.%2520Generate%2520timestamps%2520-%2520Parallel.ipynb)
+* Burst analisys(http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/PyBroMo%2520-%25203.%2520Burst%2520analisys.ipynb)
+
 
 #Licence and Copyrights
 
