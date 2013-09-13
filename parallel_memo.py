@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Apr 25 14:09:48 2013
-
-@author: instruments
-"""
 
 def gen_ph_times(dview, max_em_rate, bg_rate, dump=False, Id=0):
     dview.execute("S.sim_timetrace(max_em_rate=%f, bg_rate=%f)" % \

@@ -139,7 +139,7 @@ class ScrollingToolQT(object):
         self.fig = fig
         self.page_step = page_step # configurable for page step
         self.xmin, self.xmax = fig.axes[0].get_xlim()
-        self.width = 1 # axis units
+        self.width = min(1, self.xmax-self.xmin) # axis units
         self.pos = 0   # axis units
         self.scale = 1e3 # conversion between scrolling units and axis units
         
@@ -179,8 +179,8 @@ class ScrollingToolQT(object):
 
     def set_spinbox(self, parent):
         self.spinb = QtGui.QDoubleSpinBox(parent=parent)
-        self.spinb.setDecimals(3)
-        self.spinb.setRange(0.001,3600.)
+        self.spinb.setDecimals(4)
+        self.spinb.setRange(0.0001,3600.)
         self.spinb.setSuffix(" s")
         self.spinb.setValue(self.width)   # set the initial width
         self.spinb.valueChanged.connect(self.xwidth_changed)

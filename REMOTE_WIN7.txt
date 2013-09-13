@@ -1,0 +1,46 @@
+Remote Windows7 using SSH
+=========================
+
+Is possible to access a remote windows 7 machine (form Linux or any other OS)
+in order to launch the ipengines without the need to walk to the machine.
+
+You need to install an SSH server for windows and configure it following these
+instructions:
+
+http://hindenes.com/trondsworking/2012/05/17/run-powershell-through-ssh/
+
+http://www.windowsnetworking.com/articles-tutorials/windows-server-2008/install-SSH-Server-Windows-Server-2008.html
+
+Using powershell you have a more powerful environment than classic cmd.exe.
+
+Poweshell Commands
+------------------
+
+Kill a process by name:
+
+  Stop-Process -processname ipython
+  
+List all running processes (starting with 'p'):
+
+  Get-Process p*
+
+Create a folder:
+
+   mkdir data
+
+
+Remote Windows 7 using Remote Desktop Service
+=============================================
+
+To enable RDS on the windows machine go in:
+
+  Control Panel -> Security -> System -> Remote settings
+
+and check "Allow connections from computers running any version..."
+
+Finally clik on Select user and add the user you want to enable.
+
+Connecting from Linux
+---------------------
+
+rdesktop -u temp sw2002j.windows.chem.ucla.edu
