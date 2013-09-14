@@ -61,7 +61,9 @@ See also the official IPython documentation:
 In order to run the code you need to install a scientific python
 distribution like [Anaconda](https://store.continuum.io/cshop/anaconda/).
 The free version of Anaconda includes all the needed dependencies.
-Any other scientific python distribution will work as well.
+Any other scientific python distribution (for example 
+[Enthought Canopy](https://www.enthought.com/products/canopy/)) 
+will work as well.
  
 Once the python distribution is installed, download the latest version
 of PyBroMo from GitHub. To start using the simulator

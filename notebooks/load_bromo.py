@@ -7,7 +7,6 @@ if not 'NOTEBOOK_DIR' in globals():
 from IPython.display import clear_output
 from glob import glob
 
-#ip.magic('%pylab inline')
 ip.magic('%matplotlib inline')
 ip.magic('%cd ..')
 BROWN_DIR = ip.magic('%pwd')

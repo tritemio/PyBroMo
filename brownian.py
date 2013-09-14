@@ -354,7 +354,7 @@ if __name__ == '__main__':
     Du = 12.0        # um^2 / s
     D = Du*(1e-6)**2
 
-    # Number of samples to simulate
+    # Time duration of the simulation
     t_max = 0.1 # seconds
     N_samples = int(t_max/t_step)
 
