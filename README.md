@@ -35,7 +35,7 @@ Usage examples are given as
 interactive web-based environment that allows to mix rich text, math and graphics with 
 (executable) code, similarly to the Mathematica environment. To read
 a static HTML version of the notebooks follow the links in the section below
-(**Usage examples**). 
+( **Usage examples** ). 
 
 Moreover the IPython environment allows to easily build and use a cluster 
 for parallel computing. This feature allows to leverage the computing power
