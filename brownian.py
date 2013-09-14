@@ -98,6 +98,7 @@ class Particles_in_a_box(object):
         s += "_t_max%.1fs_ID%d-%d" % (self.t_max, self.EID, self.ID)
         return s
     def print_RAM(self):
+        """Print RAM needed to simulate the current set of parameters."""
         float_size = 8
         size_MB = (self.N_samples*float_size/(1024*1024))
         print "  Number of particles:", self.np
@@ -114,8 +115,12 @@ class Particles_in_a_box(object):
     def sim_motion_em(self, delete_pos=True, total_emission=True):
         """Simulate Brownian motion and emission rates in one step.
         This method simulates only one particle a time (to use less RAM).  
-        `delete_pos` allows to discard the trajectories and save only the
-        total emission rates (i.e. the sum of emissions of all the particles.)
+        `delete_pos` allows to discard the particle trajectories and save only 
+                the emission.
+        `total_emission` choose to save a single emission array for all the 
+                particles (if True), or save the emission of each single
+                particle (if False). In the latter case `.em` will be a 2D
+                array (#particles x time). Otherwise `.em` is (1 x time).
         """
         N_samples = self.N_samples
         if total_emission:
