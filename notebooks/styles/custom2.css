@@ -1,0 +1,40 @@
+<style>
+    @font-face {
+        font-family: "Computer Modern";
+        src: url('http://mirrors.ctan.org/fonts/cm-unicode/fonts/otf/cmunss.otf');
+    }
+    div.cell{
+        width:900px;
+        margin-left:8% !important;
+        margin-right:auto;
+    }
+    div.text_cell_render{
+        font-family: Computer Modern, "Helvetica Neue", Arial, Helvetica, Geneva, sans-serif;
+        line-height: 120%;
+        font-size: 110%;
+        width:800px;
+        margin-left:auto;
+        margin-right:auto;
+    }
+    blockquote  p {
+	/*margin: 1em 2em;*/
+	line-height: 140%;
+    }
+
+    .rendered_html code {
+	background-color: #f7f7f7;
+	border: 1px solid #dddddd;
+	color: black;
+	line-height: 1.1em;
+    	padding: 0.15em;
+	font-size: 85%;
+    }
+
+    .CodeMirror{
+            font-family: "Source Code Pro", source-code-pro,Consolas, monospace;
+    }
+    /*.prompt{
+        display: None;
+    }*/
+    
+</style>

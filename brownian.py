@@ -181,7 +181,7 @@ class Particles_in_a_box(object):
         """Save itself in `dir_` in a file named using the simul. parameters.
         """
         fname = dir_+'/'+prefix+'_'+self.compact_name()+'.pickle'
-        pickle.dump(S, open(fname, 'wb'), protocol=2)
+        pickle.dump(self, open(fname, 'wb'), protocol=2)
         print "Saved to", fname
     def load(self, dir_='.', prefix='bromo_sim'):
         """Try to load a simulation named according to current parameters.
@@ -253,6 +253,26 @@ def merge_particle_emission(SS):
     for Si in SS:
         S.em += Si.em
     return S
+
+def parallel_gen_timetag(dview, max_em_rate, bg_rate):
+    """Generate timestamps from a set of remote simulations in `dview`.
+    Assumes that all the engines have an `S` object already containing 
+    an emission trace (`S.em`). The "photons" timetags are generated 
+    from these emission traces and merged into a single array of timestamps.
+    `max_em_rate` and `bg_rate` are passed to `S.sim_timetrace()`.
+    """
+    dview.execute("S.sim_timetrace(max_em_rate=%f, bg_rate=%f)" % \
+            (max_em_rate, bg_rate))
+    dview.execute("S.gen_ph_times()")
+    PH = dview['S.ph_times']
+    # Assuming all t_max equal, just take the first
+    t_max = dview['S.t_max'][0] 
+    t_tot = np.sum(dview['S.t_max'])
+    dview.execute("sim_name = S.compact_name_core()")
+    # Core names contains no ID or t_max
+    sim_name = dview['sim_name'][0]
+    ph_times = merge_ph_times(PH, time_block=t_max)
+    return ph_times, t_tot, sim_name
 
 ##
 # Plot simulation functions
