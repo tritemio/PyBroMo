@@ -1,7 +1,9 @@
 Overview
 =======
 
-**PyBroMo** is a simulator for confocal single-molecule fluorescence experiments.
+**PyBroMo** is a simulator for Brownian motion and photon emission of freely 
+diffusing (fluorescent) particles excited by a confocal, diffraction limited, laser 
+spot.
 
 The program simulates 3-D Brownian motion trajectories and fluorescent
 emission of an arbitrary number of molecules diffusing in a simulation volume (the box). 
@@ -15,7 +17,8 @@ PyBroMo allows to simulate [smFRET](http://en.wikipedia.org/wiki/Single-molecule
 experiments with a desired FRET efficiency.
 Timestamps for photons detected in the donor and acceptor channel can be generated.
 
-The PSF is numerically precomputed on a regular grid using the 
+The [PSF](http://en.wikipedia.org/wiki/Point_spread_function) is numerically precomputed 
+on a regular grid using the 
 [PSFLab](http://onemolecule.chem.uwm.edu/software) software and interpolated 
 during the Brownian motion simulation in order to compute the emission 
 intensity. Alternatively a simple analytical Gaussian PSF can be also used.
