@@ -48,7 +48,7 @@ def wrap_periodic(a, a1, a2):
     wrapped = np.mod(a, a2-a1) + a1
     return wrapped
 
-class Particles_in_a_box(object):
+class ParticlesSimulation(object):
     """Class that performs the Brownian motion simulation of N particles.
     """
     def __init__(self, D, t_step, t_max, particles, box, psf, EID=0, ID=0):
@@ -380,7 +380,7 @@ if __name__ == '__main__':
     P = gen_particles(40, box)
 
     # Brownian motion and emission simulation
-    #S = Particles_in_a_box(D=D, t_step=t_step, particles=P, box=box, psf=psf)
+    #S = ParticlesSimulation(D=D, t_step=t_step, particles=P, box=box, psf=psf)
     #S.sim_motion_em(N_samples)
     #S.sim_timetrace(max_em_rate=3e5, bg_rate=10e3)
     #S.gen_ph_times()
