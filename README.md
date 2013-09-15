@@ -101,7 +101,7 @@ in a single operation integrating the (random) array of displacements (with cum
 
 The emission rate is a (deterministic) function of the trajectory and is obtained evaluating the PSF intensity at each molecule position.
 
-To overcome the problem of high RAM usage for long simulations, the user can choose to delete the particle trajectory after the emission trace has been computed. Moreover is also possible to save a single cumulative array of emissions (for all the particles) instead of having a separate emission trace for each particle. The computation can also be distributed on the nodes of a cluster (IPython cluster). Several batches of simulation can be executed on each node, making possible to simulate an arbitrary long experiment on limited hardware. Thanks to the IPython infrastructure the simulation can be seamless run on a single machine, on a cluster of machines or on a cloud computing server.
+To overcome the problem of high RAM usage for long simulations, the user can choose to delete the particle trajectory after the emission trace has been computed. Moreover, is possible to save a single cumulative array of emissions (for all the particles) instead of having a separate emission trace for each particle. Finally, the computation can be distributed on the nodes of a cluster (IPython cluster). Several batches of simulation can be executed on each node, making possible to simulate an arbitrary long experiment on limited hardware. Thanks to the IPython infrastructure the simulation can be seamless run on a single machine, on a cluster of machines or on a cloud computing server.
 
 #Usage examples
 
