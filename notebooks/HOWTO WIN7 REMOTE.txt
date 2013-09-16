@@ -1,7 +1,7 @@
 Remote Windows7 using SSH
 =========================
 
-Is possible to access a remote windows 7 machine (form Linux or any other OS)
+It is possible to access a remote windows 7 machine (form Linux or any other OS)
 in order to launch the ipengines without the need to walk to the machine.
 
 You need to install an SSH server for windows and configure it following these
