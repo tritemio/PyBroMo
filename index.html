@@ -49,7 +49,8 @@ Timestamps for photons detected by the donor and acceptor channel can be generat
 <a href="http://onemolecule.chem.uwm.edu/software">PSFLab</a> software. Alternatively, a simple analytical Gaussian-shaped PSF can be also used.
 During the Brownian motion simulation the PSF is evaluated to compute the particle emission intensity. </p>
 
-<p>The user documentation is in the form of a series of <a href="http://ipython.org/notebook.html">IPython Notebook</a> (see below).</p>
+<p>The user documentation is in the form of a series of <a href="http://ipython.org/notebook.html">IPython Notebook</a> 
+(see <strong><a href="#usage-examples">Usage examples</a></strong>). An overview of the architecture can be found <a href="#architecture">below</a>.</p>
 
 <p>For more information contact me at <a href="mailto:tritemio@gmail.com">tritemio@gmail.com</a>.</p>
 
@@ -62,7 +63,7 @@ scientific stack of libraries (numpy, scipy, matplotlib).</p>
 <p>Usage examples are given as 
 IPython notebooks. 
 <a href="http://ipython.org/notebook.html">IPython Notebook</a> is an interactive web-based environment that allows to mix rich text, math and graphics with (live) code, similarly to the Mathematica environment. 
-You can find a static HTML version of the notebooks in the below section <strong>Usage examples</strong>. </p>
+You can find a static HTML version of the notebooks below in section <strong><a href="#usage-examples">Usage examples</a></strong>. </p>
 
 <p>Moreover the <a href="http://ipython.org/">IPython environment</a> allows to easily setup a cluster for parallel computing. Therefore simulation time can be
 greatly reduced using a single multi-core PC, multiple PC or a cloud-computing service. Examples on how to perform parallel simulation are provided in the notebooks.</p>
@@ -98,11 +99,11 @@ launching an IPython Notebook server in the PyBroMo notebook folder
 <h3>
 <a name="configuring-ipython-notebook" class="anchor" href="#configuring-ipython-notebook"><span class="octicon octicon-link"></span></a>Configuring IPython Notebook</h3>
 
-<p>If you put PyBroMo in "C:\PyBroMo" then the notebooks folder will be 
-"C:\PyBroMo\notebooks".</p>
+<p>If you put PyBroMo in <code>C:\PyBroMo</code> then the notebooks folder will be 
+<code>C:\PyBroMo\notebooks</code>.</p>
 
 <p>Just right click on the <em>IPython Notebook icon</em> -&gt; <em>Properties</em> and paste 
-the notebook folder in "Start in". Apply and close.</p>
+the notebook folder in <em>Start in</em>. Apply and close.</p>
 
 <p>Now, double click on the icon and a browser should pop up showing the list
 of notebooks. Chrome browser is suggested.</p>
@@ -158,7 +159,7 @@ executed.</p>
 
 <p>PyBroMo - A single molecule diffusion simulator in confocal geometry.</p>
 
-<p>Copyright (C) 2013  Antonino Ingargiola <a href="mailto:tritemio@gmail.com">tritemio@gmail.com</a></p>
+<p>Copyright (C) 2013  Antonino Ingargiola - <a href="mailto:tritemio@gmail.com">tritemio@gmail.com</a></p>
 
 <pre><code>This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -183,7 +184,17 @@ You can find a full copy of the license in the file LICENSE.txt
       </footer>
     </div>
 
-    
+              <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-44142116-1");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
 
   </body>
 </html>
