@@ -1,7 +1,7 @@
 Overview
 =======
 
-**PyBroMo** is an open-source simulator for Brownian-motion diffusion and photo-emission of fluorescent particles excited by a diffraction limited laser spot.
+**[PyBroMo](http://tritemio.github.io/PyBroMo/)** is an open-source simulator for Brownian-motion diffusion and photo-emission of fluorescent particles excited by a diffraction limited laser spot.
 
 The program simulates 3-D Brownian motion trajectories and fluorescent
 emission of an arbitrary number of particles freely diffusing in a simulation volume (the box). 
@@ -108,7 +108,7 @@ To overcome the problem of high RAM usage for long simulations, the user can cho
 
 The following links will open (a static version of) the notebooks provided
 with PyBroMo. This collection serves both as usage examples and user guide.
-If you install the software (see **Installation** section) these notebooks can be
+If you install the software (see [**Installation**](#installation) section) these notebooks can be
 executed.
 
 * [1.1 Run simulation - Single host](http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/PyBroMo%2520-%25201.1%2520Run%2520simulation%2520-%2520Single%2520host.ipynb)
