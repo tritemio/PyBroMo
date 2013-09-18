@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Pybromo : A single molecule brownian motion diffusion simulator in confocal geometry." />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Pybromo</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/tritemio/PyBroMo">View on GitHub</a>
+
+          <h1 id="project_title">Pybromo</h1>
+          <h2 id="project_tagline">A single molecule brownian motion diffusion simulator in confocal geometry.</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/tritemio/PyBroMo/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/tritemio/PyBroMo/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a name="overview" class="anchor" href="#overview"><span class="octicon octicon-link"></span></a>Overview</h1>
+
+<p><strong>PyBroMo</strong> is an open-source simulator for Brownian-motion diffusion and photo-emission of fluorescent particles excited by a diffraction limited laser spot.</p>
+
+<p>The program simulates 3-D Brownian motion trajectories and fluorescent
+emission of an arbitrary number of particles freely diffusing in a simulation volume (the box). 
+Inside the simulation box a laser excitation volume (the 
+<a href="http://en.wikipedia.org/wiki/Point_spread_function">PSF</a> of the objective lens) is defined numerically or analytically (Gaussian shape).  Molecules diffusing 
+through the excitation volume emit photons at a rate proportional to the excitation intensity.</p>
+
+<p>PyBroMo allows to simulate <a href="http://en.wikipedia.org/wiki/Single-molecule_FRET">smFRET</a> experiments with a desired FRET efficiency.
+Timestamps for photons detected by the donor and acceptor channel can be generated.</p>
+
+<p>The <a href="http://en.wikipedia.org/wiki/Point_spread_function">PSF</a> is numerically precomputed with <a href="http://dx.doi.org/10.1364/JOSAA.27.000295">rigorous vectorial electromagnetic computations</a> using the
+<a href="http://onemolecule.chem.uwm.edu/software">PSFLab</a> software. Alternatively, a simple analytical Gaussian-shaped PSF can be also used.
+During the Brownian motion simulation the PSF is evaluated to compute the particle emission intensity. </p>
+
+<p>The user documentation is in the form of a series of <a href="http://ipython.org/notebook.html">IPython Notebook</a> (see below).</p>
+
+<p>For more information contact me at <a href="mailto:tritemio@gmail.com">tritemio@gmail.com</a>.</p>
+
+<h1>
+<a name="environment" class="anchor" href="#environment"><span class="octicon octicon-link"></span></a>Environment</h1>
+
+<p>PyBroMo is written in the <a href="http://www.python.org/">python programming language</a> using the standard 
+scientific stack of libraries (numpy, scipy, matplotlib).</p>
+
+<p>Usage examples are given as 
+IPython notebooks. 
+<a href="http://ipython.org/notebook.html">IPython Notebook</a> is an interactive web-based environment that allows to mix rich text, math and graphics with (live) code, similarly to the Mathematica environment. 
+You can find a static HTML version of the notebooks in the below section <strong>Usage examples</strong>. </p>
+
+<p>Moreover the <a href="http://ipython.org/">IPython environment</a> allows to easily setup a cluster for parallel computing. Therefore simulation time can be
+greatly reduced using a single multi-core PC, multiple PC or a cloud-computing service. Examples on how to perform parallel simulation are provided in the notebooks.</p>
+
+<p>For a tutorial on python in science:</p>
+
+<ul>
+<li><a href="http://scipy-lectures.github.io/">Python Scientific Lecture Notes</a></li>
+</ul><p>You may also want to check these links to the IPython documentation:</p>
+
+<ul>
+<li><a href="http://ipython.org/ipython-doc/stable/interactive/notebook.html">The IPython Notebook</a></li>
+<li><a href="http://ipython.org/ipython-doc/stable/parallel/index.html">Using IPython for parallel computing</a></li>
+</ul><h1>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h1>
+
+<h2>
+<a name="ms-windows" class="anchor" href="#ms-windows"><span class="octicon octicon-link"></span></a>MS Windows</h2>
+
+<p>In order to run the code you need to install a scientific python
+distribution like <a href="https://store.continuum.io/cshop/anaconda/">Anaconda</a>.
+The free version of Anaconda includes all the needed dependencies.
+Any other scientific python distribution (for example 
+<a href="https://www.enthought.com/products/canopy/">Enthought Canopy</a>) 
+will work as well.</p>
+
+<p>Once a python distribution is installed, download the latest version
+of <a href="https://github.com/tritemio/PyBroMo">PyBroMo</a> from <em>GitHub</em>. 
+It's suggested to start using the simulator
+launching an IPython Notebook server in the PyBroMo notebook folder
+(see the following paragraph) and playing with the examples.</p>
+
+<h3>
+<a name="configuring-ipython-notebook" class="anchor" href="#configuring-ipython-notebook"><span class="octicon octicon-link"></span></a>Configuring IPython Notebook</h3>
+
+<p>If you put PyBroMo in "C:\PyBroMo" then the notebooks folder will be 
+"C:\PyBroMo\notebooks".</p>
+
+<p>Just right click on the <em>IPython Notebook icon</em> -&gt; <em>Properties</em> and paste 
+the notebook folder in "Start in". Apply and close.</p>
+
+<p>Now, double click on the icon and a browser should pop up showing the list
+of notebooks. Chrome browser is suggested.</p>
+
+<h2>
+<a name="linux-and-mac-os-x" class="anchor" href="#linux-and-mac-os-x"><span class="octicon octicon-link"></span></a>Linux and Mac OS X</h2>
+
+<p>On Linux or Mac OS X you can also use the <a href="https://store.continuum.io/cshop/anaconda/">Anaconda</a> distribution.</p>
+
+<p>Alternatively you can install the following requirements (hint: on Mac OS X you can use MacPorts):</p>
+
+<ul>
+<li>python 2.7.x</li>
+<li>IPython 1.x</li>
+<li>matplotlib 1.3.x or greater</li>
+<li>numpy/scipy (any recent version)</li>
+<li>modern browser (Chrome suggested)</li>
+</ul><h1>
+<a name="architecture" class="anchor" href="#architecture"><span class="octicon octicon-link"></span></a>Architecture</h1>
+
+<p>The simulation domain is defined as 3-D box, centered around the origin. The dimension on each direction (x, y, z) can be different. Periodic boundary conditions are applied.</p>
+
+<p>A particle is described by its initial position. A list of particles with random initial position is generated by an utility function before running the simulation.</p>
+
+<p>The excitation PSF is a function of the position and is centered with maximum on the origin. A realistic PSF obtained by vectorial electromagnetic simulation is precomputed using <a href="http://onemolecule.chem.uwm.edu/software">PSFLab</a>. The PSF is computed for a single wavelength and includes effects such as refractive index mismatch and mismatch between the objective lens correction and the cover-glass thickness. The user can  generate a different PSF using <a href="http://onemolecule.chem.uwm.edu/software">PSFLab</a>. The PSF is generated using circular polarized light so it has cylindrical symmetry and can precomputed only on the x-z plane.
+Alternatively, a simple Gaussian PSF can also be used.</p>
+
+<p>The simulation parameters are: the diffusion coefficient, the simulation box, the list of particles, the simulation time step and the simulation final time. At this stage no photo-physics effect (blinking, bleaching, ....) is simulated.</p>
+
+<p>Currently the brownian  motion simulation uses constant time-step. This allows
+a very simple and fast implementation. In fact the trajectory is computed
+in a single operation integrating the (random) array of displacements (with cumsum).</p>
+
+<p>The emission rate is a (deterministic) function of the trajectory and is obtained evaluating the PSF intensity at each molecule position.</p>
+
+<p>To overcome the problem of high RAM usage for long simulations, the user can choose to delete the particle trajectory after the emission trace has been computed. Moreover, is possible to save a single cumulative array of emissions (for all the particles) instead of having a separate emission trace for each particle. Finally, the computation can be distributed on the nodes of a cluster (IPython cluster). Several batches of simulation can be executed on each node, making possible to simulate an arbitrary long experiment on limited hardware. Thanks to the IPython infrastructure the simulation can be seamless run on a single machine, on a cluster of machines or on a cloud computing server.</p>
+
+<h1>
+<a name="usage-examples" class="anchor" href="#usage-examples"><span class="octicon octicon-link"></span></a>Usage examples</h1>
+
+<p>The following links will open (a static version of) the notebooks provided
+with PyBroMo. This collection serves both as usage examples and user guide.
+If you install the software (see <strong>Installation</strong> section) these notebooks can be
+executed.</p>
+
+<ul>
+<li><a href="http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/PyBroMo%2520-%25201.1%2520Run%2520simulation%2520-%2520Single%2520host.ipynb">1.1 Run simulation - Single host</a></li>
+<li><a href="http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/PyBroMo%2520-%25201.2%2520Run%2520simulation%2520-%2520Parallel.ipynb">1.2 Run simulation - Parallel</a></li>
+<li><a href="http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/PyBroMo%2520-%25202.%2520Generate%2520timestamps%2520-%2520Parallel.ipynb">2. Generate timestamps - Parallel</a></li>
+<li><a href="http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/PyBroMo%2520-%25203.%2520Generate%2520and%2520export%2520smFRET%2520data.ipynb">3. Generate and export smFRET data</a></li>
+</ul><h1>
+<a name="license-and-copyrights" class="anchor" href="#license-and-copyrights"><span class="octicon octicon-link"></span></a>License and Copyrights</h1>
+
+<p>PyBroMo - A single molecule diffusion simulator in confocal geometry.</p>
+
+<p>Copyright (C) 2013  Antonino Ingargiola <a href="mailto:tritemio@gmail.com">tritemio@gmail.com</a></p>
+
+<pre><code>This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You can find a full copy of the license in the file LICENSE.txt
+</code></pre>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Pybromo maintained by <a href="https://github.com/tritemio">tritemio</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
