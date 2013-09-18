@@ -17,7 +17,8 @@ The [PSF](http://en.wikipedia.org/wiki/Point_spread_function) is numerically pre
 [PSFLab](http://onemolecule.chem.uwm.edu/software) software. Alternatively, a simple analytical Gaussian-shaped PSF can be also used.
 During the Brownian motion simulation the PSF is evaluated to compute the particle emission intensity. 
 
-The user documentation is in the form of a series of [IPython Notebook](http://ipython.org/notebook.html) (see below).
+The user documentation is in the form of a series of [IPython Notebook](http://ipython.org/notebook.html) 
+(see **[Usage examples](#usage-examples)**). An overview of the architecture can be found [below](#architecture).
 
 For more information contact me at tritemio@gmail.com.
 
@@ -30,7 +31,7 @@ scientific stack of libraries (numpy, scipy, matplotlib).
 Usage examples are given as 
 IPython notebooks. 
 [IPython Notebook](http://ipython.org/notebook.html) is an interactive web-based environment that allows to mix rich text, math and graphics with (live) code, similarly to the Mathematica environment. 
-You can find a static HTML version of the notebooks in the below section **Usage examples**. 
+You can find a static HTML version of the notebooks below in section **[Usage examples](#usage-examples)**. 
 
 Moreover the [IPython environment](http://ipython.org/) allows to easily setup a cluster for parallel computing. Therefore simulation time can be
 greatly reduced using a single multi-core PC, multiple PC or a cloud-computing service. Examples on how to perform parallel simulation are provided in the notebooks.
@@ -64,11 +65,11 @@ launching an IPython Notebook server in the PyBroMo notebook folder
 
 ###Configuring IPython Notebook
 
-If you put PyBroMo in "C:\PyBroMo" then the notebooks folder will be 
-"C:\PyBroMo\notebooks".
+If you put PyBroMo in `C:\PyBroMo` then the notebooks folder will be 
+`C:\PyBroMo\notebooks`.
 
 Just right click on the *IPython Notebook icon* -> *Properties* and paste 
-the notebook folder in "Start in". Apply and close.
+the notebook folder in *Start in*. Apply and close.
 
 Now, double click on the icon and a browser should pop up showing the list
 of notebooks. Chrome browser is suggested.
@@ -120,7 +121,7 @@ executed.
 
 PyBroMo - A single molecule diffusion simulator in confocal geometry.
 
-Copyright (C) 2013  Antonino Ingargiola <tritemio@gmail.com>
+Copyright (C) 2013  Antonino Ingargiola - <tritemio@gmail.com>
 
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License
