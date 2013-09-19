@@ -20,7 +20,9 @@ During the Brownian motion simulation the PSF is evaluated to compute the partic
 The user documentation is in the form of a series of [IPython Notebook](http://ipython.org/notebook.html) 
 (see **[Usage examples](#usage-examples)**). An overview of the architecture can be found [below](#architecture).
 
-For more information contact me at tritemio@gmail.com.
+Bug fixes and/or enhancements are accepted as [Pull Requests (PR)](https://help.github.com/articles/using-pull-requests).
+
+For more info contact me at tritemio@gmail.com.
 
 Environment
 ==========
@@ -94,13 +96,14 @@ A particle is described by its initial position. A list of particles with random
 The excitation PSF is a function of the position and is centered with maximum on the origin. A realistic PSF obtained by vectorial electromagnetic simulation is precomputed using [PSFLab](http://onemolecule.chem.uwm.edu/software). The PSF is computed for a single wavelength and includes effects such as refractive index mismatch and mismatch between the objective lens correction and the cover-glass thickness. The user can  generate a different PSF using [PSFLab](http://onemolecule.chem.uwm.edu/software). The PSF is generated using circular polarized light so it has cylindrical symmetry and can precomputed only on the x-z plane.
 Alternatively, a simple Gaussian PSF can also be used.
 
-The simulation parameters are: the diffusion coefficient, the simulation box, the list of particles, the simulation time step and the simulation final time. At this stage no photo-physics effect (blinking, bleaching, ....) is simulated.
+The Brownian motion parameters are: the diffusion coefficient, the simulation box, the list of particles, the simulation time step and the simulation final time. 
 
-Currently the brownian  motion simulation uses constant time-step. This allows
-a very simple and fast implementation. In fact the trajectory is computed
-in a single operation integrating the (random) array of displacements (with cumsum).
+The brownian  motion simulation uses constant time-step. This allows
+a very simple and fast implementation. In fact, the trajectory is computed
+in a single operation integrating the (random) array of displacements with 
+[`cumsum`](http://docs.scipy.org/doc/numpy/reference/generated/numpy.cumsum.html).
 
-The emission rate is a (deterministic) function of the trajectory and is obtained evaluating the PSF intensity at each molecule position.
+The emission rate is a function of the trajectory and is obtained, during the Brownian motion simulation, evaluating the PSF intensity at each molecule position. Once the emission timetrace is computed, photons are generated using a [Poisson process](http://en.wikipedia.org/wiki/Poisson_process). Currently, no photo-physics effect (blinking, bleaching, ....) is simulated (although they could be easily added tweaking the photon generation function).
 
 To overcome the problem of high RAM usage for long simulations, the user can choose to delete the particle trajectory after the emission trace has been computed. Moreover, is possible to save a single cumulative array of emissions (for all the particles) instead of having a separate emission trace for each particle. Finally, the computation can be distributed on the nodes of a cluster (IPython cluster). Several batches of simulation can be executed on each node, making possible to simulate an arbitrary long experiment on limited hardware. Thanks to the IPython infrastructure the simulation can be seamless run on a single machine, on a cluster of machines or on a cloud computing server.
 
