@@ -20,7 +20,7 @@ During the Brownian motion simulation the PSF is evaluated to compute the partic
 The user documentation is in the form of a series of [IPython Notebook](http://ipython.org/notebook.html) 
 (see **[Usage examples](#usage-examples)**). An overview of the architecture can be found [below](#architecture).
 
-Bug fixes and/or enhancements are accepted as [Pull Requests (PR)](https://help.github.com/articles/using-pull-requests).
+Bug fixes and/or enhancements are welcome, just send a [pull requests (PR)](https://help.github.com/articles/using-pull-requests).
 
 For more info contact me at tritemio@gmail.com.
 
@@ -67,8 +67,7 @@ launching an IPython Notebook server in the PyBroMo notebook folder
 
 ###Configuring IPython Notebook
 
-If you put PyBroMo in `C:\PyBroMo` then the notebooks folder will be 
-`C:\PyBroMo\notebooks`.
+You need to configure the IPython Notebook launcher to start in the PyBroMo notebook folder. If you put PyBroMo in `C:\PyBroMo` then the notebooks folder will be `C:\PyBroMo\notebooks`.
 
 Just right click on the *IPython Notebook icon* -> *Properties* and paste 
 the notebook folder in *Start in*. Apply and close.
@@ -119,6 +118,10 @@ executed.
 * [2. Generate timestamps - Parallel](http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/PyBroMo%2520-%25202.%2520Generate%2520timestamps%2520-%2520Parallel.ipynb)
 * [3. Generate and export smFRET data](http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/PyBroMo%2520-%25203.%2520Generate%2520and%2520export%2520smFRET%2520data.ipynb)
 
+
+#Acknowledgements
+
+This work was supported by NIH grants R01 GM069709  and R01 GM095904.
 
 #License and Copyrights
 
