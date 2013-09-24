@@ -143,3 +143,6 @@ Copyright (C) 2013  Antonino Ingargiola - <tritemio@gmail.com>
 
     You can find a full copy of the license in the file LICENSE.txt
 
+
+[![githalytics.com alpha](https://cruel-carlota.pagodabox.com/7af364b00f555df7cf02932a38b05ddc "githalytics.com")](http://githalytics.com/tritemio/PyBroMo)
+
