@@ -20,7 +20,7 @@ During the Brownian motion simulation the PSF is evaluated to compute the partic
 The user documentation is in the form of a series of [IPython Notebook](http://ipython.org/notebook.html) 
 (see **[Usage examples](#usage-examples)**). An overview of the architecture can be found [below](#architecture).
 
-Bug fixes and/or enhancements are welcome, just send a [pull requests (PR)](https://help.github.com/articles/using-pull-requests).
+Bug fixes and/or enhancements are welcome, just send a [pull request (PR)](https://help.github.com/articles/using-pull-requests).
 
 For more info contact me at tritemio@gmail.com.
 
