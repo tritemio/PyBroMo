@@ -17,7 +17,7 @@ from numpy import array, arange, sqrt
 import matplotlib.pyplot as plt
 
 from path_def import *
-from PSF import GaussianPSF, NumericPSF
+from psflib import GaussianPSF, NumericPSF
 from scroll_gui import ScrollingToolQT
 
 ## Avogadro constant
@@ -250,21 +250,21 @@ def load_sim_id(ID, glob_str='*', EID=None, dir_='.', prefix='bromo_sim',
 ##
 # Functions to manage/merge multiple simulations
 #
-def merge_ph_times(PH, time_block):
-    """From a list of arrays of timetags return a single array of timetags.
-    `time_block` is the duration of each array of timetags.
+def merge_ph_times(ph_times_list, time_block):
+    """Build an array of timestamps joining the arrays in `ph_times_list`.
+    `time_block` is the duration of each array of timestamps.
     """
-    OFFSET = np.arange(len(PH))*time_block
-    CUM_SIZES = np.cumsum([ph.size for ph in PH])
-    ph_times = np.zeros(CUM_SIZES[-1])
+    offsets = np.arange(len(ph_times_list))*time_block
+    cum_sizes = np.cumsum([ph.size for ph in ph_times_list])
+    ph_times = np.zeros(cum_sizes[-1])
     i1 = 0
-    for i2, ph, offset in zip(CUM_SIZES, PH, OFFSET):
+    for i2, ph, offset in zip(cum_sizes, ph_times_list, offsets):
         ph_times[i1:i2] = ph + offset
         i1 = i2
     return ph_times
 
 def merge_DA_ph_times(ph_times_d, ph_times_a):
-    """Returns the merged timetags of Donor and Acceptor and a bool mask for A
+    """Returns the merged timestamps of Donor and Acceptor and a bool mask for A
     """
     ph_times = np.hstack([ph_times_d, ph_times_a])
     a_em = np.hstack([np.zeros(ph_times_d.size, dtype=np.bool),
@@ -285,10 +285,10 @@ def merge_particle_emission(SS):
         S.em += Si.em
     return S
 
-def parallel_gen_timetag(dview, max_em_rate, bg_rate):
+def parallel_gen_timestamps(dview, max_em_rate, bg_rate):
     """Generate timestamps from a set of remote simulations in `dview`.
     Assumes that all the engines have an `S` object already containing 
-    an emission trace (`S.em`). The "photons" timetags are generated 
+    an emission trace (`S.em`). The "photons" timestamps are generated 
     from these emission traces and merged into a single array of timestamps.
     `max_em_rate` and `bg_rate` are passed to `S.sim_timetrace()`.
     """
