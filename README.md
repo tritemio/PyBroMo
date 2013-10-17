@@ -1,24 +1,34 @@
 Overview
 =======
 
-**[PyBroMo](http://tritemio.github.io/PyBroMo/)** is an open-source simulator for Brownian-motion diffusion and photo-emission of fluorescent particles excited by a diffraction limited laser spot.
+**[PyBroMo](http://tritemio.github.io/PyBroMo/)** is an open-source simulator 
+for Brownian-motion diffusion and photon emission of fluorescent particles 
+excited by a diffraction limited laser spot.
+PyBroMo allows to simulate timestamps of photons emitted during 
+[smFRET](http://en.wikipedia.org/wiki/Single-molecule_FRET) experiments, 
+including sample background and detectors dark counts.
 
-The program simulates 3-D Brownian motion trajectories and fluorescent
-emission of an arbitrary number of particles freely diffusing in a simulation volume (the box). 
+The program simulates 3-D Brownian motion trajectories and emission of an arbitrary number of particles freely diffusing in a simulation volume (a box). 
 Inside the simulation box a laser excitation volume (the 
-[PSF](http://en.wikipedia.org/wiki/Point_spread_function) of the objective lens) is defined numerically or analytically (Gaussian shape).  Molecules diffusing 
-through the excitation volume emit photons at a rate proportional to the excitation intensity.
+[PSF](http://en.wikipedia.org/wiki/Point_spread_function) of the objective lens)
+is defined numerically or analytically (Gaussian shape).  Molecules diffusing 
+through the excitation volume emit photons at a rate proportional to the 
+local excitation intensity.
 
-PyBroMo allows to simulate [smFRET](http://en.wikipedia.org/wiki/Single-molecule_FRET) experiments with a desired FRET efficiency.
-Timestamps for photons detected by the donor and acceptor channel can be generated.
-
-The [PSF](http://en.wikipedia.org/wiki/Point_spread_function) is numerically precomputed with [rigorous vectorial electromagnetic computations]
+A precomputed numerical [PSF](http://en.wikipedia.org/wiki/Point_spread_function)
+is included and used by default.
+The included numerical PSF is computed through
+[rigorous vectorial electromagnetic computations]
 (http://dx.doi.org/10.1364/JOSAA.27.000295) using the
-[PSFLab](http://onemolecule.chem.uwm.edu/software) software. Alternatively, a simple analytical Gaussian-shaped PSF can be also used.
-During the Brownian motion simulation the PSF is evaluated to compute the particle emission intensity. 
+[PSFLab](http://onemolecule.chem.uwm.edu/software) software. 
+The user can provide a different numerical PSF or,
+alternatively, use an analytical Gaussian-shaped PSF.
 
-The user documentation is in the form of a series of [IPython Notebook](http://ipython.org/notebook.html) 
-(see **[Usage examples](#usage-examples)**). An overview of the architecture can be found [below](#architecture).
+An overview of the architecture of the simulator can be found 
+[below](#architecture).
+
+The user documentation is provided in a series of [IPython Notebook](http://ipython.org/notebook.html) 
+(see **[Usage examples](#usage-examples)**). 
 
 Bug fixes and/or enhancements are welcome, just send a [pull request (PR)](https://help.github.com/articles/using-pull-requests).
 
@@ -97,14 +107,21 @@ Alternatively, a simple Gaussian PSF can also be used.
 
 The Brownian motion parameters are: the diffusion coefficient, the simulation box, the list of particles, the simulation time step and the simulation final time. 
 
-The brownian  motion simulation uses constant time-step. This allows
-a very simple and fast implementation. In fact, the trajectory is computed
-in a single operation integrating the (random) array of displacements with 
-[`cumsum`](http://docs.scipy.org/doc/numpy/reference/generated/numpy.cumsum.html).
+The Brownian  motion simulation uses constant timesteps (typically 0.5 μs). 
+This allows a straightforward and efficient implementation. 
+In fact, the trajectory is computed
+in a single operation, integrating the (random) array of displacements with the
+[`cumsum`](http://docs.scipy.org/doc/numpy/reference/generated/numpy.cumsum.html) command. The drawback of this approach is the high RAM usage, although the
+problem can be mitigated (see below).
 
-The emission rate is a function of the trajectory and is obtained, during the Brownian motion simulation, evaluating the PSF intensity at each molecule position. Once the emission timetrace is computed, photons are generated using a [Poisson process](http://en.wikipedia.org/wiki/Poisson_process). Currently, no photo-physics effect (blinking, bleaching, ....) is simulated (although they could be easily added tweaking the photon generation function).
+The instantaneous emission rate of the particle is computed during the Brownian motion simulation, evaluating the PSF intensity at each position. Once the emission rate is computed at all the timesteps, photons are generated stochastically from a [Poisson process](http://en.wikipedia.org/wiki/Poisson_process). The rate of the Poisson process is the sum of the instantaneous emission rate and the background rate. The time bin in which a photon is extracted 
+is used as the photon (or dark count) timestamp. 
+Photo-physics effects, such as blinking and bleaching, are not currently 
+modeled.
+However these effect can be easily included simply "modulating" the emission 
+rates before generating the photons.
 
-To overcome the problem of high RAM usage for long simulations, the user can choose to delete the particle trajectory after the emission trace has been computed. Moreover, is possible to save a single cumulative array of emissions (for all the particles) instead of having a separate emission trace for each particle. Finally, the computation can be distributed on the nodes of a cluster (IPython cluster). Several batches of simulation can be executed on each node, making possible to simulate an arbitrary long experiment on limited hardware. Thanks to the IPython infrastructure the simulation can be seamless run on a single machine, on a cluster of machines or on a cloud computing server.
+To overcome the problem of high RAM usage of long simulations, the user can choose to delete the particle trajectory after the emission trace has been computed. Moreover, is possible to save a single cumulative array of emissions (for all the particles) instead of having a separate emission trace for each particle. Finally, the computation can be distributed on the nodes of a cluster (IPython cluster). Several batches of simulation can be executed on each node, making possible to simulate an arbitrary long experiment on limited hardware. Thanks to the IPython infrastructure the simulation can be seamless run on a single machine, on a cluster of machines or on a cloud computing server.
 
 #Usage examples
 
@@ -145,4 +162,3 @@ Copyright (C) 2013  Antonino Ingargiola - <tritemio@gmail.com>
 
 
 [![githalytics.com alpha](https://cruel-carlota.pagodabox.com/7af364b00f555df7cf02932a38b05ddc "githalytics.com")](http://githalytics.com/tritemio/PyBroMo)
-
