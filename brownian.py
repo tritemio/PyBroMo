@@ -74,12 +74,12 @@ class ParticlesSimulation(object):
         `box`: a `Box` object defining the simulation boundaries
         `psf`: a "PSF" object (`GaussianPSF` or `NumericPSF`) defining the PSF
         `EID`: is an ID that identifies the engine on which the simulation
-            runs. It's a way to distinguish simulations that may otherwise 
+            runs. It's a way to distinguish simulations that may otherwise
             appear identical.
-        `ID`: is a number that identify the simulation, for ex. if you run 
+        `ID`: is a number that identify the simulation, for ex. if you run
             the same multiple times on the same engine you can assign different
-            ID. 
-        The EID and ID are shown in the string representation and are used 
+            ID.
+        The EID and ID are shown in the string representation and are used
         to save unique file names.
         """
         self.particles = particles
@@ -93,21 +93,21 @@ class ParticlesSimulation(object):
         self.EID = EID
         self.N_samples = int(t_max/t_step)
         self.sigma = sqrt(2*D*3*t_step)
-    
+
     def __repr__(self):
         s = repr(self.box)
         s += "\nD %.2g, #Particles %d, t_step %.1fus, t_max %.1fs" % (
                 self.D, self.np, self.t_step*1e6, self.t_max)
         s += " EID_ID %d %d" % (self.EID, self.ID)
         return s
-    
+
     def compact_name_core(self):
         """Compact representation of simulation parameters (no EID and t_max)
         """
         Moles = self.concentration()
         return "D%.2g_%dP_%dpM_step%.1fus_ID%d" % (
                 self.D, self.np, Moles*1e12, self.t_step*1e6, self.ID)
-    
+
     def compact_name(self):
         """Compact representation of all simulation parameters
         """
@@ -115,7 +115,7 @@ class ParticlesSimulation(object):
         s = self.compact_name_core()[:-4]
         s += "_t_max%.1fs_ID%d-%d" % (self.t_max, self.EID, self.ID)
         return s
-    
+
     def print_RAM(self):
         """Print RAM needed to simulate the current set of parameters."""
         float_size = 8
@@ -124,20 +124,20 @@ class ParticlesSimulation(object):
         print "  Number of time steps:", self.N_samples
         print "  Emission array size: %.1f MB (total_emission=True) " % size_MB
         print "  Emission array size: %.1f MB (total_emission=False)" % \
-                (size_MB*self.np) 
+                (size_MB*self.np)
         print "  Position array size: %.1f MB " % (3*size_MB*self.np)
 
     def concentration(self):
         """Return the concentration (in Moles) of the particles in the box.
         """
         return (self.np/NA)/self.box.volume_L()
-    
+
     def sim_motion_em(self, delete_pos=True, total_emission=True):
         """Simulate Brownian motion and emission rates in one step.
-        This method simulates only one particle a time (to use less RAM).  
-        `delete_pos` allows to discard the particle trajectories and save only 
+        This method simulates only one particle a time (to use less RAM).
+        `delete_pos` allows to discard the particle trajectories and save only
                 the emission.
-        `total_emission` choose to save a single emission array for all the 
+        `total_emission` choose to save a single emission array for all the
                 particles (if True), or save the emission of each single
                 particle (if False). In the latter case `.em` will be a 2D
                 array (#particles x time). Otherwise `.em` is (1 x time).
@@ -164,18 +164,18 @@ class ParticlesSimulation(object):
             # particles) emision by sampling the PSF along th trajectory
             # then square to account for emission and detection PSF
             if total_emission:
-                self.em += self.psf.eval_xz(Ro, Z)**2 
+                self.em += self.psf.eval_xz(Ro, Z)**2
             else:
                 self.em[i] = self.psf.eval_xz(Ro, Z)**2
             if not delete_pos: POS.append(pos.reshape(1, 3, N_samples))
         if not delete_pos: self.pos = np.concatenate(POS)
-    
+
     def sim_timetrace(self, max_em_rate=1, bg_rate=0):
         """Draw random emitted photons from Poisson(emission rates)."""
         self.bg_rate = bg_rate
         em_rates = (self.em.sum(axis=0)*max_em_rate + bg_rate)*self.t_step
         self.tt = NR.poisson(lam=em_rates).astype(np.uint8)
-    
+
     def gen_ph_times(self):
         """Generate timestamps of emitted photons from the Poisson events
         extracted by `sim_timetrace()`
@@ -196,7 +196,7 @@ class ParticlesSimulation(object):
         ph_times.sort()
         ph_times *= self.t_step
         self.ph_times = ph_times
-    
+
     def time(self, dec=1):
         """Return the time axis with decimation `dec` (memoized)
         """
@@ -205,14 +205,14 @@ class ParticlesSimulation(object):
             # Add the new time axis to the cache
             self._time[dec] = arange(self.N_samples/dec)*(self.t_step*dec)
         return self._time[dec]
-    
+
     def dump(self, dir_='.', prefix='bromo_sim'):
         """Save itself in `dir_` in a file named using the simul. parameters.
         """
         fname = dir_+'/'+prefix+'_'+self.compact_name()+'.pickle'
         pickle.dump(self, open(fname, 'wb'), protocol=2)
         print "Saved to", fname
-    
+
     def load(self, dir_='.', prefix='bromo_sim'):
         """Try to load a simulation named according to current parameters.
         Look in `dir_` for a file named in the same way as the `.dump()` method
@@ -279,7 +279,7 @@ def merge_particle_emission(SS):
     # Merge all the particles
     P = reduce(lambda x, y: x+y, [Si.particles for Si in SS])
     s = SS[0]
-    S = ParticlesSimulation(D=s.D, t_step=s.t_step, t_max=t_max, 
+    S = ParticlesSimulation(D=s.D, t_step=s.t_step, t_max=t_max,
             particles=P, box=s.box, psf=s.psf)
     S.em = np.zeros(s.em.shape, dtype=np.float64)
     for Si in SS:
@@ -288,8 +288,8 @@ def merge_particle_emission(SS):
 
 def parallel_gen_timestamps(dview, max_em_rate, bg_rate):
     """Generate timestamps from a set of remote simulations in `dview`.
-    Assumes that all the engines have an `S` object already containing 
-    an emission trace (`S.em`). The "photons" timestamps are generated 
+    Assumes that all the engines have an `S` object already containing
+    an emission trace (`S.em`). The "photons" timestamps are generated
     from these emission traces and merged into a single array of timestamps.
     `max_em_rate` and `bg_rate` are passed to `S.sim_timetrace()`.
     """
@@ -298,7 +298,7 @@ def parallel_gen_timestamps(dview, max_em_rate, bg_rate):
     dview.execute("S.gen_ph_times()")
     PH = dview['S.ph_times']
     # Assuming all t_max equal, just take the first
-    t_max = dview['S.t_max'][0] 
+    t_max = dview['S.t_max'][0]
     t_tot = np.sum(dview['S.t_max'])
     dview.execute("sim_name = S.compact_name_core()")
     # Core names contains no ID or t_max
@@ -312,10 +312,10 @@ def parallel_gen_timestamps(dview, max_em_rate, bg_rate):
 
 def plot_tracks(S):
     fig, AX = plt.subplots(2, 1, figsize=(6, 9), sharex=True)
-    plt.subplots_adjust(left=0.12, right=0.95, top=0.95, bottom=0.05, 
+    plt.subplots_adjust(left=0.12, right=0.95, top=0.95, bottom=0.05,
             hspace=0.05)
     plt.suptitle("%.1f ms diffusion" % (S.t_step*S.N_samples*1e3))
-    
+
     for ip in range(S.np):
         x, y, z = S.pos[ip]
         x0, y0, z0 = S.particles[ip].r0
@@ -350,7 +350,7 @@ def plot_emission(S, dec=1, scroll_gui=False, multi=False, ms=False):
         for em in S.em:
             time = S.time(dec=dec) if not ms else S.time(dec=dec)*1e3
             plt.plot(time, em[::dec], alpha=0.5)
-    else:    
+    else:
         time = S.time(dec=dec) if not ms else S.time(dec=dec)*1e3
         plt.plot(time, S.em.sum(axis=0)[::dec], alpha=0.5)
     s = None
@@ -407,12 +407,12 @@ if __name__ == '__main__':
     P = gen_particles(40, box)
 
     # Brownian motion and emission simulation
-    #S = ParticlesSimulation(D=D, t_step=t_step, t_max=t_max, 
+    #S = ParticlesSimulation(D=D, t_step=t_step, t_max=t_max,
     #                        particles=P, box=box, psf=psf)
-    #S.sim_motion_em(N_samples)
+    #S.sim_motion_em(delete_pos=False)
     #S.sim_timetrace(max_em_rate=3e5, bg_rate=10e3)
     #S.gen_ph_times()
-    
+
     #plot_tracks(S)
     #plot_emission(S)
 
