@@ -116,6 +116,24 @@ class ParticlesSimulation(object):
         s += "_t_max%.1fs_ID%d-%d" % (self.t_max, self.EID, self.ID)
         return s
 
+    def get_params(self):
+        """Return a dict containing all the simulation parameters.
+
+        The values are 2-element tuples: first element is the value and
+        second element is a string describing the parameter (metadata).
+        """
+        params = dict(
+            D = (self.D, 'Diffusion coefficient (m^2/s)'),
+            t_step = (self.t_step, 'Simulation time-step (s)'),
+            t_max = (self.t_max, 'Simulation total time (s)'),
+            ID = (self.ID, 'Simulation ID (int)'),
+            EID = (self.EID, 'IPython engine ID (int)'),
+            np = (self.np, 'Number of simulated particles'),
+            pico_mol = (self.concentration()*1e12,
+                        'Particles concentration (pM)')
+            )
+        return params
+
     def print_RAM(self):
         """Print RAM needed to simulate the current set of parameters."""
         float_size = 8
