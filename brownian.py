@@ -91,7 +91,7 @@ class ParticlesSimulation(object):
         self.t_max = t_max
         self.ID = ID
         self.EID = EID
-        self.N_samples = int(t_max/t_step)
+        self.n_samples = int(t_max/t_step)
         self.sigma = sqrt(2*D*3*t_step)
 
     def __repr__(self):
@@ -137,9 +137,9 @@ class ParticlesSimulation(object):
     def print_RAM(self):
         """Print RAM needed to simulate the current set of parameters."""
         float_size = 8
-        size_MB = (self.N_samples*float_size/(1024*1024))
+        size_MB = (self.n_samples*float_size/(1024*1024))
         print "  Number of particles:", self.np
-        print "  Number of time steps:", self.N_samples
+        print "  Number of time steps:", self.n_samples
         print "  Emission array size: %.1f MB (total_emission=True) " % size_MB
         print "  Emission array size: %.1f MB (total_emission=False)" % \
                 (size_MB*self.np)
@@ -160,17 +160,17 @@ class ParticlesSimulation(object):
                 particle (if False). In the latter case `.em` will be a 2D
                 array (#particles x time). Otherwise `.em` is (1 x time).
         """
-        N_samples = self.N_samples
+        n_samples = self.n_samples
         if total_emission:
-            self.em = np.zeros((1, N_samples), dtype=np.float64)
+            self.em = np.zeros((1, n_samples), dtype=np.float64)
         else:
-            self.em = np.zeros((self.np, N_samples), dtype=np.float64)
+            self.em = np.zeros((self.np, n_samples), dtype=np.float64)
         POS = []
         pid = os.getpid()
         for i, p in enumerate(self.particles):
             print "[%4d] Simulating particle %d " % (pid, i)
-            delta_pos = NR.normal(loc=0, scale=self.sigma, size=3*N_samples)
-            delta_pos = delta_pos.reshape(3, N_samples)
+            delta_pos = NR.normal(loc=0, scale=self.sigma, size=3*n_samples)
+            delta_pos = delta_pos.reshape(3, n_samples)
             pos = np.cumsum(delta_pos, axis=-1, out=delta_pos)
             pos += p.r0.reshape(3, 1)
             # Coordinates wrapping using periodic boundary conditions
@@ -189,7 +189,7 @@ class ParticlesSimulation(object):
                 # Store the individual emission of current particle
                 self.em[i] = current_em
 
-            if not delete_pos: POS.append(pos.reshape(1, 3, N_samples))
+            if not delete_pos: POS.append(pos.reshape(1, 3, n_samples))
         if not delete_pos: self.pos = np.concatenate(POS)
 
     def sim_timetrace(self, max_em_rate=1, bg_rate=0):
@@ -225,7 +225,7 @@ class ParticlesSimulation(object):
         if not hasattr(self, "_time"): self._time = dict()
         if not dec in self._time:
             # Add the new time axis to the cache
-            self._time[dec] = arange(self.N_samples/dec)*(self.t_step*dec)
+            self._time[dec] = arange(self.n_samples/dec)*(self.t_step*dec)
         return self._time[dec]
 
     def dump(self, dir_='.', prefix='bromo_sim'):
@@ -336,7 +336,7 @@ def plot_tracks(S):
     fig, AX = plt.subplots(2, 1, figsize=(6, 9), sharex=True)
     plt.subplots_adjust(left=0.12, right=0.95, top=0.95, bottom=0.05,
             hspace=0.05)
-    plt.suptitle("%.1f ms diffusion" % (S.t_step*S.N_samples*1e3))
+    plt.suptitle("%.1f ms diffusion" % (S.t_step*S.n_samples*1e3))
 
     for ip in range(S.np):
         x, y, z = S.pos[ip]
@@ -365,7 +365,7 @@ def plot_tracks(S):
 def plot_emission(S, dec=1, scroll_gui=False, multi=False, ms=False):
     fig = plt.figure()
     plt.title("%d Particles, %.1f s diffusion, %d pM" % (S.np,
-            S.t_step*S.N_samples, S.concentration()*1e12))
+            S.t_step*S.n_samples, S.concentration()*1e12))
     plt.xlabel("Time (s)"); plt.ylabel("Emission rate [A.U.]"); plt.grid(1)
     if ms: plt.xlabel("Time (ms)")
     if multi:
@@ -382,7 +382,7 @@ def plot_emission(S, dec=1, scroll_gui=False, multi=False, ms=False):
 def plot_timetrace(S, rebin=2e3, scroll_gui=False):
     fig = plt.figure()
     plt.title("%d Particles, %.1f s diffusion, %d pM, bin=%.1fms" % (S.np,
-            S.t_step*S.N_samples, S.concentration()*1e12, S.t_step*rebin*1e3))
+            S.t_step*S.n_samples, S.concentration()*1e12, S.t_step*rebin*1e3))
     plt.xlabel("Time (s)"); plt.ylabel("Emission rate [A.U.]"); plt.grid(1)
     trace = S.tt.reshape(-1, rebin).sum(axis=1)
     t_trace = (arange(trace.size)+1)*(S.t_step*rebin)
@@ -410,7 +410,7 @@ if __name__ == '__main__':
 
     # Time duration of the simulation
     t_max = 0.1         # seconds
-    N_samples = int(t_max/t_step)
+    n_samples = int(t_max/t_step)
 
     # PSF definition
     #ss = 0.2*1e-6      # lateral dimension (sigma)
