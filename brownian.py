@@ -10,6 +10,7 @@ This is the main module of PyBroMo. Import (or run) it to perform a simulation.
 import os
 import cPickle as pickle
 from glob import glob
+from itertools import izip
 
 import numpy.random as NR
 import numpy as np
@@ -20,9 +21,44 @@ from path_def import *
 from psflib import GaussianPSF, NumericPSF
 from scroll_gui import ScrollingToolQT
 import loadutils as lu
+from storage import Storage
 
 ## Avogadro constant
 NA = 6.022141e23    # [mol^-1]
+
+def load_simulation(fname):
+    store = Storage(fname, overwrite=False)
+    params = store.get_sim_parameters()
+
+    psf = NumericPSF()
+    box = Box(x1=-4.e-6, x2=4.e-6, y1=-4.e-6, y2=4.e-6, z1=-6e-6, z2=6e-6)
+    P = gen_particles(params['np'], box)
+    S = ParticlesSimulation(D=params['D'], t_step=params['t_step'],
+                            t_max=params['t_max'],
+                            particles=P, box=box, psf=psf)
+    S.store = store
+    S.emission = S.store.data_file.root.trajectories.emission
+    S.chunk_size = 2**19
+    #self.store_fname = fname+self.compact_name()
+    #self.store = Storage(self.store_fname, self.get_params(),
+    #                     overwrite=overwrite)
+    #kwargs = dict(chunksize=self.chunk_size, comp_filter=comp_filter)
+    #self.emission_tot = self.store.add_emission_tot(**kwargs)
+    return S
+
+def merge_timestamps(timestamps_list, kind='quicksort'):
+    timestamps = np.hstack(timestamps_list)
+    particle = np.hstack([np.ones(ts.size, dtype='uint8')
+                            for ts in timestamps_list])
+    argsort = timestamps.argsort(kind=kind)
+    return timestamps[argsort], particle[argsort]
+
+def merge_timestamps(timestamps_list, kind='quicksort'):
+    timestamps = np.hstack(timestamps_list)
+    particle = np.hstack([np.ones(ts.size, dtype='uint8')
+                            for ts in timestamps_list])
+    argsort = timestamps_p.argsort(kind=kind)
+    return timestamps[argsort], particle[argsort]
 
 class Box:
     """The simulation box"""
@@ -61,6 +97,42 @@ def wrap_periodic(a, a1, a2):
     a -= a1
     wrapped = np.mod(a, a2-a1) + a1
     return wrapped
+
+def iter_chunk_size(num_samples, chunk_size):
+    """Iterator used to iterate in chunks over an array of size `num_samples`.
+    At each iteration returns `chunk_size` except for the last iteration.
+    """
+    last_chunk_size = np.mod(num_samples, chunk_size)
+    for i in xrange(int(num_samples/chunk_size)):
+        yield chunk_size
+    if last_chunk_size > 0:
+        yield last_chunk_size
+
+def iter_chunk_slice(num_samples, chunk_size):
+    """Iterator used to iterate in chunks over an array of size `num_samples`.
+    At each iteration returns a slice of size `chunk_size` except for the
+    last iteration (where the slice is smaller, potentially).
+    """
+    i = 0
+    for c_size in iter_chunk_size(num_samples, chunk_size):
+        yield slice(i, i + c_size)
+        i += c_size
+
+def reduce_chunk(func, array):
+    """Reduce with `func`, chunk by chunk, the passed pytable `array`.
+    """
+    res = []
+    for slice in iter_chunk_slice(array.shape[-1], array.chunkshape[-1]):
+        res.append(func(array[..., slice]))
+    return func(res)
+
+def map_chunk(func, array, out_array):
+    """Map with `func`, chunk by chunk, the input pytable `array`.
+    The result is store in the output pytable array `out_array`.
+    """
+    for slice in iter_chunk_slice(array.shape[-1], array.chunkshape[-1]):
+        out_array.append(func(array[..., slice]))
+    return out_array
 
 
 class ParticlesSimulation(object):
@@ -127,7 +199,7 @@ class ParticlesSimulation(object):
             t_step = (self.t_step, 'Simulation time-step (s)'),
             t_max = (self.t_max, 'Simulation total time (s)'),
             ID = (self.ID, 'Simulation ID (int)'),
-            EID = (self.EID, 'IPython engine ID (int)'),
+            EID = (self.EID, 'IPython Engine ID (int)'),
             np = (self.np, 'Number of simulated particles'),
             pico_mol = (self.concentration()*1e12,
                         'Particles concentration (pM)')
@@ -197,6 +269,143 @@ class ParticlesSimulation(object):
         self.bg_rate = bg_rate
         em_rates = (self.em.sum(axis=0)*max_em_rate + bg_rate)*self.t_step
         self.tt = NR.poisson(lam=em_rates).astype(np.uint8)
+
+    def open_store(self, fname='store0_', chunk_size=2**19, overwrite=True,
+                   comp_filter=None):
+        self.chunk_size = chunk_size
+        self.store_fname = fname+self.compact_name()
+        self.store = Storage(self.store_fname, self.get_params(),
+                             overwrite=overwrite)
+        kwargs = dict(chunksize=self.chunk_size, comp_filter=comp_filter)
+        self.emission_tot = self.store.add_emission_tot(**kwargs)
+        self.emission = self.store.add_emission(**kwargs)
+
+    def sim_motion_em_chunk(self, delete_pos=True, total_emission=True):
+        """Simulate Brownian motion and emission rates in one step.
+        This method simulates sequentially one particle a time (uses less RAM).
+        `delete_pos` allows to discard the particle trajectories and save only
+                the emission.
+        `total_emission` choose to save a single emission array for all the
+                particles (if True), or save the emission of each single
+                particle (if False). In the latter case `.em` will be a 2D
+                array (#particles x time). Otherwise `.em` is (1 x time).
+        """
+        if 'store' not in self.__dict__:
+            self.open_store()
+
+        for c_size in iter_chunk_size(self.n_samples, self.chunk_size):
+            if total_emission:
+                em = np.zeros((c_size), dtype=np.float64)
+            else:
+                em = np.zeros((self.np, c_size), dtype=np.float64)
+            POS = []
+            pid = os.getpid()
+            for i, p in enumerate(self.particles):
+                print "[%4d] Simulating particle %d " % (pid, i)
+                delta_pos = NR.normal(loc=0, scale=self.sigma, size=3*c_size)
+                delta_pos = delta_pos.reshape(3, c_size)
+                pos = np.cumsum(delta_pos, axis=-1, out=delta_pos)
+                pos += p.r0.reshape(3, 1)
+                # Coordinates wrapping using periodic boundary conditions
+                for coord in (0, 1, 2):
+                    pos[coord] = wrap_periodic(pos[coord], *self.box.b[coord])
+
+                # Sample the PSF along i-th trajectory then square to account
+                # for emission and detection PSF.
+                Ro = sqrt(pos[0]**2 + pos[1]**2)  # radial pos. on x-y plane
+                Z = pos[2]
+                current_em = self.psf.eval_xz(Ro, Z)**2
+                if total_emission:
+                    # Add the current particle emission to the total emission
+                    em += current_em
+                else:
+                    # Store the individual emission of current particle
+                    em[i] = current_em
+                if not delete_pos: POS.append(pos.reshape(1, 3, n_samples))
+
+            ## Append em to the permanent storage
+            # if total_emission is just a linear array
+            # otherwise is an hstack of what is saved and em (self.np, c_size)
+            em_store = self.emission_tot if total_emission else self.emission
+            em_store.append(em)
+            if not delete_pos: self.pos = np.concatenate(POS)
+        em_store.flush()
+
+    def sim_timetrace_chunkt(self, max_em_rate=1, bg_rate=0, comp_filter=None):
+        """Draw random emitted photons from Poisson(emission rates)."""
+        self.bg_rate = bg_rate
+        self.timetrace_tot = self.store.add_timetrace_tot(
+                chunksize=self.chunk_size, comp_filter=comp_filter,
+                overwrite=True
+                )
+        for c_slice in iter_chunk_slice(self.n_samples, self.chunk_size):
+            em_tot_chunk = self.emission_tot[c_slice]
+            em_rates = (em_tot_chunk*max_em_rate + bg_rate)*self.t_step
+            tt = NR.poisson(lam=em_rates).astype(np.uint8)
+            self.timetrace_tot.append(tt)
+        self.timetrace_tot.flush()
+
+    def sim_timetrace_chunk(self, max_em_rate=1, bg_rate=0, comp_filter=None,
+                            chunk_size=2**19):
+        """Draw random emitted photons from Poisson(emission rates)."""
+        self.bg_rate = bg_rate
+        self.timetrace_p = self.store.add_timetrace(
+                chunksize=chunk_size, comp_filter=comp_filter,
+                overwrite=True
+                )
+        for c_slice in iter_chunk_slice(self.n_samples, chunk_size):
+            em_chunk = self.emission[:, c_slice]
+            em_rates = (em_chunk*max_em_rate + bg_rate)*self.t_step
+            tt = NR.poisson(lam=em_rates).astype(np.uint8)
+            for timetrace_single, tt_single in zip(self.timetrace_p, tt):
+                timetrace_single.append(tt_single)
+        for tt_i in self.timetrace_p:
+            tt_i.flush()
+
+    def gen_ph_times_chunk(self):
+        """Generate timestamps from binnned timetraces in `self.timetrace_p`.
+
+        Timestamps (int64) are multiplied by 10 to increase the resolution.
+        Multiple counts in the same bin are distributed adding a fraction
+        of the bin (i.e. a number between 1 and 9).
+        """
+        fractions = [5, 2, 8, 4, 9, 1, 7, 3, 6]
+        timestamps_p = []
+        for timetrace_pi in self.timetrace_p:
+            PH = [timetrace_pi.get_where_list('counts >= 1')]
+            max_counts = timetrace_pi[PH[0]].astype('u1').max()
+            assert max_counts < 10
+            PH[0] *= 10
+            for frac, v in izip(fractions, range(2, max_counts + 1)):
+                PH.append(timetrace_pi.get_where_list('counts >= %d' % v)*10)
+                PH[-1] += frac
+            timestamps_p.append(np.hstack(PH).astype(np.int64))
+        return timestamps_p
+
+    def gen_ph_times_chunkt(self):
+        """Generate timestamps of emitted photons from the Poisson events
+        extracted by `sim_timetrace()`
+        """
+        assert self.n_samples < 2**31
+        iph = arange(self.np, dtype=np.uint32)
+
+        PH = []
+        for v in range(1, map_chunk(np.max, self.timetrace_tot) + 1):
+            PH.append(iph[self.tt >= v])
+        ph_times = np.hstack(PH).astype(np.float64)
+
+        # Index of 1st time with V photons per bins, for each V >= 2
+        I = np.cumsum(array([ph.size for ph in PH]))
+        #print I
+        fraction = 0.5
+        for iph1, iph2 in zip(I[:-1], I[1:]):
+            ph_times[iph1:iph2] += fraction
+            fraction /= 2.
+            #print iph1, iph2
+        ph_times.sort()
+        ph_times *= self.t_step
+        self.ph_times = ph_times
+
 
     def gen_ph_times(self):
         """Generate timestamps of emitted photons from the Poisson events
@@ -409,7 +618,7 @@ if __name__ == '__main__':
     D = Du*(1e-6)**2
 
     # Time duration of the simulation
-    t_max = 0.1         # seconds
+    t_max = 0.3        # seconds
     n_samples = int(t_max/t_step)
 
     # PSF definition
@@ -426,11 +635,11 @@ if __name__ == '__main__':
     #p3 = Particle(y0=-3e-6)
     #p4 = Particle(y0=3e-6)
     #P = [p1,p2,p3,p4]
-    P = gen_particles(40, box)
+    P = gen_particles(15, box)
 
     # Brownian motion and emission simulation
-    #S = ParticlesSimulation(D=D, t_step=t_step, t_max=t_max,
-    #                        particles=P, box=box, psf=psf)
+    S = ParticlesSimulation(D=D, t_step=t_step, t_max=t_max,
+                            particles=P, box=box, psf=psf)
     #S.sim_motion_em(delete_pos=False)
     #S.sim_timetrace(max_em_rate=3e5, bg_rate=10e3)
     #S.gen_ph_times()
