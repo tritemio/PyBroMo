@@ -83,7 +83,9 @@ Just right click on the *IPython Notebook icon* -> *Properties* and paste
 the notebook folder in *Start in*. Apply and close.
 
 Now, double click on the icon and a browser should pop up showing the list
-of notebooks. Chrome browser is suggested.
+of notebooks. Chrome browser is suggested (to set Chrome as the default browser
+in IPython see [this StackOverflow answer](http://stackoverflow.com/questions/15632663/launch-ipython-notebook-with-selected-browser)).
+
 
 ##Linux and Mac OS X
 
