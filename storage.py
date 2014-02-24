@@ -40,9 +40,13 @@ class Storage(object):
             # Set the simulation parameters
             if params is not None:
                 self.set_sim_parameters(params)
-
+    
     def close(self):
         self.data_file.close()
+
+    def open(self):
+        """Reopen a file after has been closed (uses the store filename)."""
+        self.__init__(self.data_file.filename, overwrite=False)
 
     def set_sim_parameters(self, params):
         """Store parameters in `params` in `data_file.root.parameters`.
