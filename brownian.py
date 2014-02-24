@@ -38,11 +38,11 @@ def load_simulation(fname):
                             particles=P, box=box, psf=psf)
     S.store = store
     S.emission = S.store.data_file.root.trajectories.emission
-    S.chunk_size = 2**19
+    S.chunksize = 2**19
     #self.store_fname = fname+self.compact_name()
     #self.store = Storage(self.store_fname, self.get_params(),
     #                     overwrite=overwrite)
-    #kwargs = dict(chunksize=self.chunk_size, comp_filter=comp_filter)
+    #kwargs = dict(chunksize=self.chunksize, comp_filter=comp_filter)
     #self.emission_tot = self.store.add_emission_tot(**kwargs)
     return S
 
@@ -98,23 +98,23 @@ def wrap_periodic(a, a1, a2):
     wrapped = np.mod(a, a2-a1) + a1
     return wrapped
 
-def iter_chunk_size(num_samples, chunk_size):
+def iter_chunksize(num_samples, chunksize):
     """Iterator used to iterate in chunks over an array of size `num_samples`.
-    At each iteration returns `chunk_size` except for the last iteration.
+    At each iteration returns `chunksize` except for the last iteration.
     """
-    last_chunk_size = np.mod(num_samples, chunk_size)
-    for i in xrange(int(num_samples/chunk_size)):
-        yield chunk_size
-    if last_chunk_size > 0:
-        yield last_chunk_size
+    last_chunksize = np.mod(num_samples, chunksize)
+    for i in xrange(int(num_samples/chunksize)):
+        yield chunksize
+    if last_chunksize > 0:
+        yield last_chunksize
 
-def iter_chunk_slice(num_samples, chunk_size):
+def iter_chunk_slice(num_samples, chunksize):
     """Iterator used to iterate in chunks over an array of size `num_samples`.
-    At each iteration returns a slice of size `chunk_size` except for the
+    At each iteration returns a slice of size `chunksize` except for the
     last iteration (where the slice is smaller, potentially).
     """
     i = 0
-    for c_size in iter_chunk_size(num_samples, chunk_size):
+    for c_size in iter_chunksize(num_samples, chunksize):
         yield slice(i, i + c_size)
         i += c_size
 
@@ -270,13 +270,13 @@ class ParticlesSimulation(object):
         em_rates = (self.em.sum(axis=0)*max_em_rate + bg_rate)*self.t_step
         self.tt = NR.poisson(lam=em_rates).astype(np.uint8)
 
-    def open_store(self, fname='store0_', chunk_size=2**19, overwrite=True,
+    def open_store(self, fname='store0_', chunksize=2**19, overwrite=True,
                    comp_filter=None):
-        self.chunk_size = chunk_size
-        self.store_fname = fname+self.compact_name()
+        self.chunksize = chunksize
+        self.store_fname = fname+self.compact_name()+'.hdf5'
         self.store = Storage(self.store_fname, self.get_params(),
                              overwrite=overwrite)
-        kwargs = dict(chunksize=self.chunk_size, comp_filter=comp_filter)
+        kwargs = dict(chunksize=self.chunksize, comp_filter=comp_filter)
         self.emission_tot = self.store.add_emission_tot(**kwargs)
         self.emission = self.store.add_emission(**kwargs)
 
@@ -293,7 +293,7 @@ class ParticlesSimulation(object):
         if 'store' not in self.__dict__:
             self.open_store()
 
-        for c_size in iter_chunk_size(self.n_samples, self.chunk_size):
+        for c_size in iter_chunksize(self.n_samples, self.chunksize):
             if total_emission:
                 em = np.zeros((c_size), dtype=np.float64)
             else:
@@ -335,10 +335,10 @@ class ParticlesSimulation(object):
         """Draw random emitted photons from Poisson(emission rates)."""
         self.bg_rate = bg_rate
         self.timetrace_tot = self.store.add_timetrace_tot(
-                chunksize=self.chunk_size, comp_filter=comp_filter,
+                chunksize=self.chunksize, comp_filter=comp_filter,
                 overwrite=True
                 )
-        for c_slice in iter_chunk_slice(self.n_samples, self.chunk_size):
+        for c_slice in iter_chunk_slice(self.n_samples, self.chunksize):
             em_tot_chunk = self.emission_tot[c_slice]
             em_rates = (em_tot_chunk*max_em_rate + bg_rate)*self.t_step
             tt = NR.poisson(lam=em_rates).astype(np.uint8)
@@ -346,14 +346,14 @@ class ParticlesSimulation(object):
         self.timetrace_tot.flush()
 
     def sim_timetrace_chunk(self, max_em_rate=1, bg_rate=0, comp_filter=None,
-                            chunk_size=2**19):
+                            chunksize=2**19):
         """Draw random emitted photons from Poisson(emission rates)."""
         self.bg_rate = bg_rate
         self.timetrace_p = self.store.add_timetrace(
-                chunksize=chunk_size, comp_filter=comp_filter,
+                chunksize=chunksize, comp_filter=comp_filter,
                 overwrite=True
                 )
-        for c_slice in iter_chunk_slice(self.n_samples, chunk_size):
+        for c_slice in iter_chunk_slice(self.n_samples, chunksize):
             em_chunk = self.emission[:, c_slice]
             em_rates = (em_chunk*max_em_rate + bg_rate)*self.t_step
             tt = NR.poisson(lam=em_rates).astype(np.uint8)
