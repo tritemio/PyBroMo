@@ -37,6 +37,8 @@ class Storage(object):
                                    'Simulated trajectories')
             self.data_file.create_group('/', 'parameters',
                                    'Simulation parameters')
+            self.data_file.create_group('/', 'psf',
+                                   'PSFs used in the simulation')
             # Set the simulation numeric parameters
             if nparams is not None:
                 self.set_sim_nparams(nparams)
@@ -85,7 +87,7 @@ class Storage(object):
 
     def add_trajectory(self, name, overwrite=False, shape=(0,), title='',
                   chunksize=2**19, comp_filter=None,
-                  atom=tables.Float64Atom()):
+                  atom=tables.Float64Atom(), params=dict()):
         """Add an trajectory array in '/trajectories'.
         """
         group = self.data_file.root.trajectories
@@ -116,10 +118,13 @@ class Storage(object):
             filters = comp_filter,
             title = title)
         
+        # Set the array parameters/attributes
+        for key, value in params.items():
+            store_array.set_attr(key, value)
         return store_array
 
     def add_emission_tot(self, chunksize=2**19, comp_filter=None,
-                         overwrite=False):
+                         overwrite=False, params=dict()):
         """Add the `emission_tot` array in '/trajectories'.
         """
         return self.add_trajectory('emission_tot', overwrite=overwrite,
@@ -128,7 +133,7 @@ class Storage(object):
                 title = 'Summed emission trace of all the particles')
 
     def add_emission(self, chunksize=2**19, comp_filter=None,
-                     overwrite=False):
+                     overwrite=False, params=dict()):
         """Add the `emission` array in '/trajectories'.
         """
         nparams = self.get_sim_nparams()

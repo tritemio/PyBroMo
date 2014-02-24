@@ -28,19 +28,19 @@ NA = 6.022141e23    # [mol^-1]
 
 def load_simulation(fname):
     store = Storage(fname, overwrite=False)
-    params = store.get_sim_parameters()
+    nparams = store.get_sim_nparams()
 
     psf = NumericPSF()
     box = Box(x1=-4.e-6, x2=4.e-6, y1=-4.e-6, y2=4.e-6, z1=-6e-6, z2=6e-6)
-    P = gen_particles(params['np'], box)
-    S = ParticlesSimulation(D=params['D'], t_step=params['t_step'],
-                            t_max=params['t_max'],
+    P = gen_particles(nparams['np'], box)
+    S = ParticlesSimulation(D=nparams['D'], t_step=nparams['t_step'],
+                            t_max=nparams['t_max'],
                             particles=P, box=box, psf=psf)
     S.store = store
     S.emission = S.store.data_file.root.trajectories.emission
     S.chunksize = 2**19
     #self.store_fname = fname+self.compact_name()
-    #self.store = Storage(self.store_fname, self.get_params(),
+    #self.store = Storage(self.store_fname, self.get_nparams(),
     #                     overwrite=overwrite)
     #kwargs = dict(chunksize=self.chunksize, comp_filter=comp_filter)
     #self.emission_tot = self.store.add_emission_tot(**kwargs)
@@ -53,12 +53,6 @@ def merge_timestamps(timestamps_list, kind='quicksort'):
     argsort = timestamps.argsort(kind=kind)
     return timestamps[argsort], particle[argsort]
 
-def merge_timestamps(timestamps_list, kind='quicksort'):
-    timestamps = np.hstack(timestamps_list)
-    particle = np.hstack([np.ones(ts.size, dtype='uint8')
-                            for ts in timestamps_list])
-    argsort = timestamps_p.argsort(kind=kind)
-    return timestamps[argsort], particle[argsort]
 
 class Box:
     """The simulation box"""
@@ -188,13 +182,13 @@ class ParticlesSimulation(object):
         s += "_t_max%.1fs_ID%d-%d" % (self.t_max, self.EID, self.ID)
         return s
 
-    def get_params(self):
-        """Return a dict containing all the simulation parameters.
+    def get_nparams(self):
+        """Return a dict containing all the simulation numeric-parameters.
 
         The values are 2-element tuples: first element is the value and
         second element is a string describing the parameter (metadata).
         """
-        params = dict(
+        nparams = dict(
             D = (self.D, 'Diffusion coefficient (m^2/s)'),
             t_step = (self.t_step, 'Simulation time-step (s)'),
             t_max = (self.t_max, 'Simulation total time (s)'),
@@ -204,7 +198,7 @@ class ParticlesSimulation(object):
             pico_mol = (self.concentration()*1e12,
                         'Particles concentration (pM)')
             )
-        return params
+        return nparams
 
     def print_RAM(self):
         """Print RAM needed to simulate the current set of parameters."""
@@ -274,9 +268,13 @@ class ParticlesSimulation(object):
                    comp_filter=None):
         self.chunksize = chunksize
         self.store_fname = fname+self.compact_name()+'.hdf5'
-        self.store = Storage(self.store_fname, self.get_params(),
+        self.store = Storage(self.store_fname, nparams=self.get_nparams(),
                              overwrite=overwrite)
-        kwargs = dict(chunksize=self.chunksize, comp_filter=comp_filter)
+        self.psf_pytables = self.psf.to_hdf5(self.store.data_file, '/psf')
+
+        kwargs = dict(chunksize=self.chunksize, comp_filter=comp_filter,
+                      params=dict(psf_fname=self.psf.fname))
+                      # Note psf.fname is the psf name in `data_file.root.psf`
         self.emission_tot = self.store.add_emission_tot(**kwargs)
         self.emission = self.store.add_emission(**kwargs)
 
