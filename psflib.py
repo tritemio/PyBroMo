@@ -46,15 +46,15 @@ class GaussianPSF:
 class NumericPSF:
     def __init__(self, fname='xz_realistic_z50_150_160_580nm_n1335_HR2',                 
                  dir_='psf_data/', x_step=0.5/8, z_step=0.5/8,
-                 pytables_psf=None):
+                 psf_pytables=None):
         """Create a PSF object for interpolation from numeric data.
         
         `dir_+fname`: should be a valid path
         """    
-        if pytables_psf is not None:
-            self.psflab_psf_raw = pytables_psf[:]
+        if psf_pytables is not None:
+            self.psflab_psf_raw = psf_pytables[:]
             for name in ['fname', 'dir_', 'x_step', 'z_step']:
-                setattr(self, pytables_psf.get_attr(name))
+                setattr(self, name, psf_pytables.get_attr(name))
         else:
             self.fname = fname
             self.dir_ = dir_
