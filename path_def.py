@@ -14,6 +14,8 @@ SIM_PH_DATA: is the folder where to save the timestamps arrays generated from
             controlling host (ipcontroller). The remote nodes don't need
             to save in this folder.
 
+GIT_PATH: path to the git executable (system dependent)
+
 NB: In path definition preferably use '/' to separate the folders. If you 
     use '\' prepend the string with r (raw string). For example these
     paths are equivalent:
@@ -28,6 +30,12 @@ import os
 if os.name == 'posix':
     SIM_DATA_DIR = "/home/anto/Documents/ucla/src/data/sim/brownian/objects/"
     SIM_PH_DIR = "/home/anto/Documents/ucla/src/data/sim/brownian/ph_times/"
+    GIT_PATH = 'git'   # On *nix assumes that git is in the PATH
 elif os.name == 'nt':
     SIM_DATA_DIR = "C:/Data/Antonio/data/sim/brownian/objects/"
     SIM_PH_DIR = "C:/Data/Antonio/data/sim/brownian/ph_times/"
+    # On WIndows try to use SourceTree embedded git
+    GIT_PATH = (os.environ['homepath'] + \
+                r'\AppData\Local\Atlassian\SourceTree\git_local\bin\git.exe')
+else:
+    raise OSError ("Operating system not recognized (%s)." % os.name)
