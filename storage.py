@@ -130,7 +130,8 @@ class Storage(object):
         return self.add_trajectory('emission_tot', overwrite=overwrite,
                 chunksize=chunksize, comp_filter=comp_filter,
                 atom=tables.Float64Atom(),
-                title = 'Summed emission trace of all the particles')
+                title = 'Summed emission trace of all the particles',
+                params=params)
 
     def add_emission(self, chunksize=2**19, comp_filter=None,
                      overwrite=False, params=dict()):
@@ -142,7 +143,8 @@ class Storage(object):
         return self.add_trajectory('emission', shape=(num_particles, 0),
                 overwrite=overwrite, chunksize=chunksize,
                 comp_filter=comp_filter, atom=tables.Float64Atom(),
-                title = 'Emission trace of each particle')
+                title = 'Emission trace of each particle',
+                params=params)
 
     def add_timetrace_tot(self, chunksize=2**19, comp_filter=None,
                             overwrite=False):
