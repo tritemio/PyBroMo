@@ -29,21 +29,25 @@ NA = 6.022141e23    # [mol^-1]
 def load_simulation(fname):
     store = Storage(fname, overwrite=False)
     nparams = store.get_sim_nparams()
-
-    psf = NumericPSF()
-    box = Box(x1=-4.e-6, x2=4.e-6, y1=-4.e-6, y2=4.e-6, z1=-6e-6, z2=6e-6)
-    P = gen_particles(nparams['np'], box)
-    S = ParticlesSimulation(D=nparams['D'], t_step=nparams['t_step'],
-                            t_max=nparams['t_max'],
-                            particles=P, box=box, psf=psf)
+    
+    psf_pytables = store.data_file.get_node('/psf/default_psf')
+    psf = NumericPSF(psf_pytables=psf_pytables)
+    box = store.data_file.get_node_attr('/parameters', 'box')
+    P = store.data_file.get_node_attr('/parameters', 'particles')
+    
+    names = ['D', 't_step', 't_max', 'EID', 'ID']    
+    kwargs = dict()
+    for n in names:
+        kwargs[n] = nparams[n]    
+    S = ParticlesSimulation(particles=P, box=box, psf=psf, **kwargs)
+    
+    # Emulate S.open_store()    
     S.store = store
+    S.store_fname = fname
+    S.psf_pytables = psf_pytables
     S.emission = S.store.data_file.root.trajectories.emission
-    S.chunksize = 2**19
-    #self.store_fname = fname+self.compact_name()
-    #self.store = Storage(self.store_fname, self.get_nparams(),
-    #                     overwrite=overwrite)
-    #kwargs = dict(chunksize=self.chunksize, comp_filter=comp_filter)
-    #self.emission_tot = self.store.add_emission_tot(**kwargs)
+    S.emission_tot = S.store.data_file.root.trajectories.emission_tot
+    S.chunksize = S.store.data_file.get_node('/parameters', 'chunksize')
     return S
 
 def merge_timestamps(timestamps_list, kind='quicksort'):
@@ -151,12 +155,14 @@ class ParticlesSimulation(object):
         self.particles = particles
         self.box = box
         self.psf = psf
-        self.np = len(particles)
+        
         self.D = D
+        self.np = len(particles)
         self.t_step = t_step
         self.t_max = t_max
         self.ID = ID
         self.EID = EID
+        
         self.n_samples = int(t_max/t_step)
         self.sigma = sqrt(2*D*3*t_step)
 
@@ -190,11 +196,11 @@ class ParticlesSimulation(object):
         """
         nparams = dict(
             D = (self.D, 'Diffusion coefficient (m^2/s)'),
+            np = (self.np, 'Number of simulated particles'),
             t_step = (self.t_step, 'Simulation time-step (s)'),
             t_max = (self.t_max, 'Simulation total time (s)'),
             ID = (self.ID, 'Simulation ID (int)'),
             EID = (self.EID, 'IPython Engine ID (int)'),
-            np = (self.np, 'Number of simulated particles'),
             pico_mol = (self.concentration()*1e12,
                         'Particles concentration (pM)')
             )
@@ -264,21 +270,29 @@ class ParticlesSimulation(object):
         em_rates = (self.em.sum(axis=0)*max_em_rate + bg_rate)*self.t_step
         self.tt = NR.poisson(lam=em_rates).astype(np.uint8)
 
-    def open_store(self, fname='store0_', chunksize=2**19, overwrite=True,
-                   comp_filter=None):
+    def open_store(self, fname='store0_', chunksize=2**18, overwrite=True,
+                   comp_filter=None, seed=1):
+        nparams = self.get_nparams()
         self.chunksize = chunksize
+        nparams.update(chunksize=(chunksize, 'Chunksize for arrays'))     
         self.store_fname = fname+self.compact_name()+'.hdf5'
-        self.store = Storage(self.store_fname, nparams=self.get_nparams(),
-                             overwrite=overwrite)
+        
+        attr_params = dict(particles=self.particles, box=self.box)
+        self.store = Storage(self.store_fname, nparams=nparams, 
+                             attr_params=attr_params, overwrite=overwrite)
+      
         self.psf_pytables = self.psf.to_hdf5(self.store.data_file, '/psf')
+        self.store.data_file.create_hard_link('/psf', 'default_psf', 
+                                              target=self.psf_pytables)
 
         kwargs = dict(chunksize=self.chunksize, comp_filter=comp_filter,
-                      params=dict(psf_fname=self.psf.fname))
+                      params=dict(psf_fname=self.psf.fname, seed=seed))
                       # Note psf.fname is the psf name in `data_file.root.psf`
         self.emission_tot = self.store.add_emission_tot(**kwargs)
         self.emission = self.store.add_emission(**kwargs)
 
-    def sim_motion_em_chunk(self, delete_pos=True, total_emission=True):
+    def sim_motion_em_chunk(self, delete_pos=True, total_emission=True, 
+                            seed=1):
         """Simulate Brownian motion and emission rates in one step.
         This method simulates sequentially one particle a time (uses less RAM).
         `delete_pos` allows to discard the particle trajectories and save only
@@ -289,8 +303,9 @@ class ParticlesSimulation(object):
                 array (#particles x time). Otherwise `.em` is (1 x time).
         """
         if 'store' not in self.__dict__:
-            self.open_store()
-
+            self.open_store(seed=seed)
+        
+        np.random.seed(seed)
         for c_size in iter_chunksize(self.n_samples, self.chunksize):
             if total_emission:
                 em = np.zeros((c_size), dtype=np.float64)
