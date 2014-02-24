@@ -13,12 +13,12 @@ import numpy as np
 
 
 class Storage(object):
-    def __init__(self, fname, params=None, overwrite=True):
+    def __init__(self, fname, nparams=None, overwrite=True):
         """Return a new HDF5 file to store simulation results.
 
         The HDF5 file has two groups:
         '/parameters'
-            containing all the simulation parameters
+            containing all the simulation numeric-parameters
 
         '/trajectories'
             containing simulation trajectories (positions, emission traces)
@@ -37,9 +37,9 @@ class Storage(object):
                                    'Simulated trajectories')
             self.data_file.create_group('/', 'parameters',
                                    'Simulation parameters')
-            # Set the simulation parameters
-            if params is not None:
-                self.set_sim_parameters(params)
+            # Set the simulation numeric parameters
+            if nparams is not None:
+                self.set_sim_nparams(nparams)
     
     def close(self):
         self.data_file.close()
@@ -48,10 +48,10 @@ class Storage(object):
         """Reopen a file after has been closed (uses the store filename)."""
         self.__init__(self.data_file.filename, overwrite=False)
 
-    def set_sim_parameters(self, params):
+    def set_sim_nparams(self, nparams):
         """Store parameters in `params` in `data_file.root.parameters`.
 
-        `params` (dict)
+        `nparams` (dict)
             A dict as returned by `get_params()` in `ParticlesSimulation()`
             The format is:
             keys:
@@ -60,28 +60,28 @@ class Storage(object):
                 first element is the parameter value
                 second element is a string used as "title" (description)
         """
-        for key, value in params.iteritems():
+        for key, value in nparams.iteritems():
             self.data_file.create_array('/parameters', key, obj=value[0],
                                    title=value[1])
 
-    def get_sim_parameters(self):
+    def get_sim_nparams(self):
         """Return a dict containing all (key, values) stored in '/parameters'
         """
-        params = dict()
+        nparams = dict()
         for p in self.data_file.root.parameters:
-            params[p.name] = p.read()
-        return params
+            nparams[p.name] = p.read()
+        return nparams
 
-    def get_sim_parameters_meta(self):
+    def get_sim_nparams_meta(self):
         """Return a dict with all parameters and metadata in '/parameters'.
 
         This returns the same dict format as returned by get_params() method
         in ParticlesSimulation().
         """
-        params = dict()
+        nparams = dict()
         for p in self.data_file.root.parameters:
-            params[p.name] = (p.read(), p.title)
-        return params
+            nparams[p.name] = (p.read(), p.title)
+        return nparams
 
     def add_trajectory(self, name, overwrite=False, shape=(0,), title='',
                   chunksize=2**19, comp_filter=None,
@@ -98,8 +98,8 @@ class Storage(object):
                 print " old returned."
                 return group.get_node(name)
 
-        params = self.get_sim_parameters()
-        num_t_steps = params['t_max']/params['t_step']
+        nparams = self.get_sim_nparams()
+        num_t_steps = nparams['t_max']/nparams['t_step']
 
         if len(shape) == 1:
             chunkshape = (chunksize,)
@@ -115,6 +115,7 @@ class Storage(object):
             expectedrows = num_t_steps,
             filters = comp_filter,
             title = title)
+        
         return store_array
 
     def add_emission_tot(self, chunksize=2**19, comp_filter=None,
@@ -130,8 +131,8 @@ class Storage(object):
                      overwrite=False):
         """Add the `emission` array in '/trajectories'.
         """
-        params = self.get_sim_parameters()
-        num_particles = params['np']
+        nparams = self.get_sim_nparams()
+        num_particles = nparams['np']
 
         return self.add_trajectory('emission', shape=(num_particles, 0),
                 overwrite=overwrite, chunksize=chunksize,
@@ -152,9 +153,9 @@ class Storage(object):
         """Add the `timetrace` array in '/trajectories'.
         """
         group = self.data_file.root.trajectories
-        params = self.get_sim_parameters()
-        num_particles = params['np']
-        num_t_steps = params['t_max']/params['t_step']
+        nparams = self.get_sim_nparams()
+        num_particles = nparams['np']
+        num_t_steps = nparams['t_max']/nparams['t_step']
         dt = np.dtype([('counts', 'u1')])
         timetrace_p = []
         for particle in xrange(num_particles):
