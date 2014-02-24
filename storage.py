@@ -150,6 +150,19 @@ class Storage(object):
                 comp_filter=comp_filter, atom=tables.Float64Atom(),
                 title = 'Emission trace of each particle',
                 params=params)
+    
+    def add_position(self, chunksize=2**19, comp_filter=None,
+                     overwrite=False, params=dict()):
+        """Add the `position` array in '/trajectories'.
+        """
+        nparams = self.get_sim_nparams()
+        num_particles = nparams['np']
+
+        return self.add_trajectory('emission', shape=(num_particles, 3, 0),
+                overwrite=overwrite, chunksize=chunksize,
+                comp_filter=comp_filter, atom=tables.Float32Atom(),
+                title = 'Position trace of each particle',
+                params=params)
 
     def add_timetrace_tot(self, chunksize=2**19, comp_filter=None,
                             overwrite=False):
