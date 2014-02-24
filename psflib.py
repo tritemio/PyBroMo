@@ -3,9 +3,9 @@ This module provides classes to compute PSF functions either starting from
 an analytical formula (i.e. Gaussian) or by interpolation of a precomputed PSF.
 """
 
+import os
 from scipy.io import loadmat
 import scipy.interpolate as SI
-from scipy.ndimage import map_coordinates
 import numexpr as NE
 import numpy as np
 
@@ -19,9 +19,9 @@ class GaussianPSF:
         `sx`, `sy`, `sz`: sigmas of the gaussian function.
         """
         self.xc, self.yc, self.zc = xc, yc, zc
-        self.rc = array([xc, yc, zc])
+        self.rc = np.array([xc, yc, zc])
         self.sx, self.sy, self.sz = sx, sy, sz
-        self.s = array([sx, sy, sz])
+        self.s = np.array([sx, sy, sz])
         self.name = "gauss"
 
     def eval(self, x, y, z):
@@ -44,14 +44,30 @@ class GaussianPSF:
 
 
 class NumericPSF:
-
-    def __init__(self, fname='xz_realistic_z50_150_160_580nm_n1335_HR2'):
-        self.fname = fname
-        subdir = 'psf_data/'
-        xi, zi, hdata, zm = load_PSFLab_xz(subdir+self.fname,
-                x_step=0.5/8, z_step=0.5/8)
-        hdata /= hdata.max() # normalize to 1 at peak
+    def __init__(self, fname='xz_realistic_z50_150_160_580nm_n1335_HR2',                 
+                 dir_='psf_data/', x_step=0.5/8, z_step=0.5/8,
+                 pytable_psf=None):
+        """Create a PSF object for interpolation from numeric data.
+        
+        `dir_+fname`: should be a valid path
+        """    
+        if pytable_psf is not None:
+            self.fname = pytable_psf.fname
+            self.dir_ = pytable_psf.dir_
+            self.x_step, self.z_step = pytable_psf.x_step, pytable_psf.z_step
+            self.psflab_psf_raw = pytable_psf[:]
+        else:
+            self.fname = fname
+            self.dir_ = dir_
+            self.x_step, self.z_step = x_step, z_step
+            self.psflab_psf_raw = load_PSFLab_file(dir_+fname)
+       
+        xi, zi, hdata, zm = convert_PSFLab_xz(self.psflab_psf_raw, 
+                                              x_step=x_step, z_step=z_step, 
+                                              normalize=True)
+        # Interpolating function (inputs in micron)
         self._fun_um = SI.RectBivariateSpline(xi, zi, hdata.T, kx=1, ky=1)
+        
         self.xi, self.zi, self.hdata, self.zm = xi, zi, hdata, zm
         self.x_step, self.z_step = xi[1] - xi[0], zi[1] - zi[0]
         self.name = 'numeric'
@@ -70,14 +86,48 @@ class NumericPSF:
         zs, xs = ro.shape
         v = self.eval_xz(ro.ravel(), z.ravel())
         return v.reshape(zs, xs)
+    
+    def to_hdf5(self, file_handle, parent_node='/'):
+        """Store the PSF data in `file_handle` (pytables) in `parent_node`.
+        
+        The raw PSF array name is stored with same name as the original fname.
+        Also, the following attribues are set: fname, dir_, x_step, z_step.
+        """
+        tarray = file_handle.create_array(parent_node, name=self.fname, 
+                                         obj=self.psflab_psf_raw)
+        tarray.fname = self.fname
+        tarray.dir_ = self.dir_
+        tarray.x_step = self.x_step
+        tarray.z_step = self.z_step
+        return tarray
 
 
-def load_PSFLab_xz(fname, x_step=0.5, z_step=0.5, normalize=0):
-    """Load a PSFLab .mat file containing a x-z slice of a PSF."""
-    data = loadmat(fname)['data']
+def load_PSFLab_file(fname):
+    """Load the array `data` in the .mat file `fname`."""
+    if os.path.exists(fname) or os.path.exists(fname+'.mat'):
+        return loadmat(fname)['data']
+    else:
+        raise IOError("Can't find PSF file '%s'" % fname)
+
+def convert_PSFLab_xz(data, x_step=0.5, z_step=0.5, normalize=False):
+    """Process a 2D array (from PSFLab .mat file) containing a x-z PSF slice.
+    
+    The input data is the raw array saved by PSFLab. The returned array has
+    the x axis cut in half (only positive x) to take advantage of the 
+    rotational symmetry around z. Pysical dimensions (`x_step` and `z_step) 
+    are also assigned.
+    
+    If `nomalize` is True the peak is normalized to 1.
+    
+    Returns:
+    x, z: (1D array) the X and Z axis in pysical units
+    hdata: (2D array) the PSF intesity
+    izm: (float) the index of PSF max along z (axis 0) for x=0 (axis 1)
+    """
     z_len, x_len = data.shape
     hdata = data[:,(x_len-1)/2:]
     x = np.arange(hdata.shape[1])*x_step
     z = np.arange(-(z_len-1)/2, (z_len-1)/2+1)*z_step
-    if normalize: hdata /= hdata.max()
+    if normalize: 
+        hdata /= hdata.max()  # normalize to 1 at peak
     return x, z, hdata, hdata[:,0].argmax()
