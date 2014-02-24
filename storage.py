@@ -13,7 +13,8 @@ import numpy as np
 
 
 class Storage(object):
-    def __init__(self, fname, nparams=None, overwrite=True):
+    def __init__(self, fname, nparams=dict(), attr_params=dict(), 
+                 overwrite=True):
         """Return a new HDF5 file to store simulation results.
 
         The HDF5 file has two groups:
@@ -38,11 +39,10 @@ class Storage(object):
             self.data_file.create_group('/', 'parameters',
                                    'Simulation parameters')
             self.data_file.create_group('/', 'psf',
-                                   'PSFs used in the simulation')
-            # Set the simulation numeric parameters
-            if nparams is not None:
-                self.set_sim_nparams(nparams)
-    
+                                   'PSFs used in the simulation')            
+            # Set the simulation parameters
+            self.set_sim_params(nparams, attr_params)
+
     def close(self):
         self.data_file.close()
 
@@ -50,7 +50,7 @@ class Storage(object):
         """Reopen a file after has been closed (uses the store filename)."""
         self.__init__(self.data_file.filename, overwrite=False)
 
-    def set_sim_nparams(self, nparams):
+    def set_sim_params(self, nparams, attr_params):
         """Store parameters in `params` in `data_file.root.parameters`.
 
         `nparams` (dict)
@@ -61,10 +61,15 @@ class Storage(object):
             values: (2-elements tuple)
                 first element is the parameter value
                 second element is a string used as "title" (description)
+        `attr_params` (dict)
+            A dict whole items are stored as attributes in '/parameters'
         """
-        for key, value in nparams.iteritems():
-            self.data_file.create_array('/parameters', key, obj=value[0],
-                                   title=value[1])
+        for name, value in nparams.iteritems():
+            self.data_file.create_array('/parameters', name, obj=value[0],
+                                        title=value[1])
+        for name, value in attr_params.items():
+                self.data_file.set_node_attr('/parameters', name, value)
+    
 
     def get_sim_nparams(self):
         """Return a dict containing all (key, values) stored in '/parameters'
