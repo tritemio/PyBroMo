@@ -270,6 +270,14 @@ class ParticlesSimulation(object):
         em_rates = (self.em.sum(axis=0)*max_em_rate + bg_rate)*self.t_step
         self.tt = NR.poisson(lam=em_rates).astype(np.uint8)
 
+    def reopen_store(self):
+        """Reopen a closed store in read-only mode."""
+        self.store.open()
+        self.psf_pytables = psf_pytables
+        self.emission = S.store.data_file.root.trajectories.emission
+        self.emission_tot = S.store.data_file.root.trajectories.emission_tot
+        self.chunksize = S.store.data_file.get_node('/parameters', 'chunksize')
+
     def open_store(self, fname='store0_', chunksize=2**18, overwrite=True,
                    comp_filter=None, seed=1):
         nparams = self.get_nparams()
