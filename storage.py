@@ -39,7 +39,9 @@ class Storage(object):
             self.data_file.create_group('/', 'parameters',
                                    'Simulation parameters')
             self.data_file.create_group('/', 'psf',
-                                   'PSFs used in the simulation')            
+                                   'PSFs used in the simulation')
+            self.data_file.create_group('/', 'timestamps',
+                                   'Timestamps of emitted photons')   
             # Set the simulation parameters
             self.set_sim_params(nparams, attr_params)
 
@@ -70,7 +72,6 @@ class Storage(object):
         for name, value in attr_params.items():
                 self.data_file.set_node_attr('/parameters', name, value)
     
-
     def get_sim_nparams(self):
         """Return a dict containing all (key, values) stored in '/parameters'
         """
@@ -89,6 +90,27 @@ class Storage(object):
         for p in self.data_file.root.parameters:
             nparams[p.name] = (p.read(), p.title)
         return nparams
+
+    def add_timestamps(self, name, clk_p, max_rate, bg_rate,
+                       num_particles, bg_particle,
+                       overwrite=False, chunksize=2**16, comp_filter=None):
+        times_array = self.data_file.create_earray(
+            '/timestamps', name, atom=tables.Int64Atom(),
+            shape = (0,),
+            chunkshape = (chunksize),
+            filters = comp_filter,
+            title = 'Simulated photon timestamps')
+        times_array.set_attr('clk_p', clk_p)
+        times_array.set_attr('max_rate', max_rate)
+        times_array.set_attr('bg_rate', bg_rate)        
+        particles_array = self.data_file.create_earray(
+            '/timestamps', name+'_par', atom=tables.UInt8Atom(),
+            shape = (0,),
+            chunkshape = (chunksize),
+            filters = comp_filter,
+            title = 'Particle number for each timestamp')
+        particles_array.set_attr('num_particles', num_particles)
+        particles_array.set_attr('bg_particle', bg_particle)
 
     def add_trajectory(self, name, overwrite=False, shape=(0,), title='',
                   chunksize=2**19, comp_filter=None,
