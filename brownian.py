@@ -160,14 +160,14 @@ class ParticlesSimulation(object):
 
     def print_RAM(self):
         """Print RAM needed to simulate the current set of parameters."""
-        float_size = 8
-        size_MB = (self.n_samples*float_size/(1024*1024))
+        float_size = 4
+        MB = 1024*1024
+        size_ = (self.n_samples*float_size)
         print "  Number of particles:", self.np
         print "  Number of time steps:", self.n_samples
-        print "  Emission array size: %.1f MB (total_emission=True) " % size_MB
-        print "  Emission array size: %.1f MB (total_emission=False)" % \
-                (size_MB*self.np)
-        print "  Position array size: %.1f MB " % (3*size_MB*self.np)
+        print "  Emission array - 1 particle (float32): %.1f MB" % (size_/MB)
+        print "  Emission array (float32): %.1f MB" % (size_*self.np/MB)
+        print "  Position array (float32): %.1f MB " % (3*size_*self.np/MB)
 
     def concentration(self, pM=False):
         """Return the concentration (in Moles) of the particles in the box.
@@ -230,9 +230,9 @@ class ParticlesSimulation(object):
         for c_size in iter_chunksize(self.n_samples, t_chunk_size):
             print i_chunk, c_size,          
             if total_emission:
-                em = np.zeros((c_size), dtype=np.float64)
+                em = np.zeros((c_size), dtype=np.float32)
             else:
-                em = np.zeros((self.np, c_size), dtype=np.float64)
+                em = np.zeros((self.np, c_size), dtype=np.float32)
             POS = []
             
             for i, p in enumerate(self.particles):
@@ -251,10 +251,10 @@ class ParticlesSimulation(object):
                 current_em = self.psf.eval_xz(Ro, Z)**2
                 if total_emission:
                     # Add the current particle emission to the total emission
-                    em += current_em
+                    em += current_em.astype(np.float32)
                 else:
                     # Store the individual emission of current particle
-                    em[i] = current_em
+                    em[i] = current_em.astype(np.float32)
                 if not delete_pos: POS.append(pos.reshape(1, 3, n_samples))
 
             ## Append em to the permanent storage

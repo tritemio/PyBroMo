@@ -170,7 +170,7 @@ class Storage(object):
         """
         return self.add_trajectory('emission_tot', overwrite=overwrite,
                 chunksize=chunksize, comp_filter=comp_filter,
-                atom=tables.Float64Atom(),
+                atom=tables.Float32Atom(),
                 title = 'Summed emission trace of all the particles',
                 params=params)
 
@@ -183,7 +183,7 @@ class Storage(object):
 
         return self.add_trajectory('emission', shape=(num_particles, 0),
                 overwrite=overwrite, chunksize=chunksize,
-                comp_filter=comp_filter, atom=tables.Float64Atom(),
+                comp_filter=comp_filter, atom=tables.Float32Atom(),
                 title = 'Emission trace of each particle',
                 params=params)
     
