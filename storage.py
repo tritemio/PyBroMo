@@ -111,6 +111,7 @@ class Storage(object):
             title = 'Particle number for each timestamp')
         particles_array.set_attr('num_particles', num_particles)
         particles_array.set_attr('bg_particle', bg_particle)
+        return times_array, particles_array
 
     def add_trajectory(self, name, overwrite=False, shape=(0,), title='',
                   chunksize=2**19, comp_filter=None,

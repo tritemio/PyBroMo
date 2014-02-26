@@ -8,6 +8,7 @@ from scipy.io import loadmat
 import scipy.interpolate as SI
 import numexpr as NE
 import numpy as np
+import hashlib
 
 
 class GaussianPSF:
@@ -22,7 +23,7 @@ class GaussianPSF:
         self.rc = np.array([xc, yc, zc])
         self.sx, self.sy, self.sz = sx, sy, sz
         self.s = np.array([sx, sy, sz])
-        self.name = "gauss"
+        self.kind = "gauss"
 
     def eval(self, x, y, z):
         """Evaluate the function in (x, y, z)."""
@@ -69,7 +70,7 @@ class NumericPSF:
         
         self.xi, self.zi, self.hdata, self.zm = xi, zi, hdata, zm
         self.x_step, self.z_step = xi[1] - xi[0], zi[1] - zi[0]
-        self.name = 'numeric'
+        self.kind = 'numeric'
 
     def eval_xz(self,x,z):
         """Evaluate the function in (x, z).
@@ -93,12 +94,24 @@ class NumericPSF:
         Also, the following attribues are set: fname, dir_, x_step, z_step.
         """
         tarray = file_handle.create_array(parent_node, name=self.fname, 
-                                         obj=self.psflab_psf_raw)
+                                         obj=self.psflab_psf_raw,
+                                         title='PSF x-z slice (PSFLab array)')
         for name in ['fname', 'dir_', 'x_step', 'z_step']:
             file_handle.set_node_attr(tarray, name, getattr(self, name))
         return tarray
-
-
+        
+    def hash(self):
+        """Return an hash string computed on the PSF data."""
+        hash_list = []
+        for k, v in self.__dict__.iteritems():
+            if not callable(v):
+                if isinstance(v, np.ndarray):
+                    hash_list.append(v.tostring())
+                else:
+                    hash_list.append(str(v))
+        return hashlib.md5(repr(hash_list)).hexdigest()
+                
+        
 def load_PSFLab_file(fname):
     """Load the array `data` in the .mat file `fname`."""
     if os.path.exists(fname) or os.path.exists(fname+'.mat'):
