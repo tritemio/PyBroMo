@@ -216,7 +216,8 @@ class ParticlesSimulation(object):
         if 'store' not in self.__dict__:
             self.open_store(seed=seed)
         
-        np.random.seed(seed)
+        if seed is not None:
+            np.random.seed(seed)
         for c_size in iter_chunksize(self.n_samples, self.chunksize):
             if total_emission:
                 em = np.zeros((c_size), dtype=np.float64)
@@ -255,7 +256,7 @@ class ParticlesSimulation(object):
             if not delete_pos: self.pos = np.concatenate(POS)
         em_store.flush()
     
-    def sim_timestamps_em_list(self, max_rate=1, bg_rate=0, seed=None):
+    def sim_timestamps_em_list(self, max_rate=1, bg_rate=0, seed=1):
         """Compute timestamps and particles and store results in a list.
         Each element contains timestamps from one chunk of emission.
         Background computed internally.       
@@ -414,8 +415,13 @@ class ParticlesSimulation(object):
             self.all_times_chunks_list.append(times_chunk_s)
             self.all_par_chunks_list.append(par_index_chunk_s)
     
-    def sim_timestamps_em_store(self, max_rate=1, bg_rate=0, seed=None,
-                                chunksize=2**16, comp_filter=None):
+    def _get_ts_name(self, max_rate=1, bg_rate=0, seed=1):
+        return 'ts_max_rate%dkcps_bg%dcps_seed%s' % \
+                            (max_rate*1e-3, bg_rate, seed)
+
+    def sim_timestamps_em_store(self, max_rate=1, bg_rate=0, seed=1,
+                                chunksize=2**16, comp_filter=None, 
+                                overwrite=False):
         """Compute timestamps and particles and store results in a list.
         Each element contains timestamps from one chunk of emission.
         Background computed in sim_timetrace_bg() as last fake particle.        
@@ -426,11 +432,11 @@ class ParticlesSimulation(object):
         max_counts = 4
         
         self.timestamps, self.tparticles = self.store.add_timestamps(
-                        name=str((max_rate, bg_rate, seed)), 
+                        name=self._get_ts_name(max_rate, bg_rate, seed), 
                         clk_p=t_step/scale, 
                         max_rate=max_rate, bg_rate=bg_rate,
                         num_particles=self.np, bg_particle=self.np,
-                        overwrite=False, chunksize=chunksize, 
+                        overwrite=overwrite, chunksize=chunksize, 
                         comp_filter=comp_filter)
         
         # Load emission in chunks, and save only the final timestamps
@@ -469,6 +475,7 @@ class ParticlesSimulation(object):
             # Save (ordered) timestamps and corresponding particles
             self.timestamps.append(times_chunk_s)
             self.tparticles.append(par_index_chunk_s)
+        self.store.data_file.flush()
 
 
 def sim_timetrace(emission, max_rate, t_step):

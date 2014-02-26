@@ -94,10 +94,17 @@ class Storage(object):
     def add_timestamps(self, name, clk_p, max_rate, bg_rate,
                        num_particles, bg_particle,
                        overwrite=False, chunksize=2**16, comp_filter=None):
+        if name in self.data_file.root.timestamps:
+            if overwrite:
+                self.data_file.remove_node('/timestamps', name=name)
+                self.data_file.remove_node('/timestamps', name=name+'_par')
+            else:
+                raise ValueError('Timestam array already exist (%s)' % name)
+
         times_array = self.data_file.create_earray(
             '/timestamps', name, atom=tables.Int64Atom(),
             shape = (0,),
-            chunkshape = (chunksize),
+            chunkshape = (chunksize,),
             filters = comp_filter,
             title = 'Simulated photon timestamps')
         times_array.set_attr('clk_p', clk_p)
@@ -106,7 +113,7 @@ class Storage(object):
         particles_array = self.data_file.create_earray(
             '/timestamps', name+'_par', atom=tables.UInt8Atom(),
             shape = (0,),
-            chunkshape = (chunksize),
+            chunkshape = (chunksize,),
             filters = comp_filter,
             title = 'Particle number for each timestamp')
         particles_array.set_attr('num_particles', num_particles)
