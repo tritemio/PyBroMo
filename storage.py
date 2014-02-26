@@ -12,6 +12,10 @@ import tables
 import numpy as np
 
 
+# Compression filter used by default for arrays
+default_compression = tables.Filters(complevel=6, complib='blosc')
+
+
 class Storage(object):
     def __init__(self, fname, nparams=dict(), attr_params=dict(), 
                  overwrite=True):
@@ -93,7 +97,8 @@ class Storage(object):
 
     def add_timestamps(self, name, clk_p, max_rate, bg_rate,
                        num_particles, bg_particle,
-                       overwrite=False, chunksize=2**16, comp_filter=None):
+                       overwrite=False, chunksize=2**16, 
+                       comp_filter=default_compression):
         if name in self.data_file.root.timestamps:
             if overwrite:
                 self.data_file.remove_node('/timestamps', name=name)
@@ -121,7 +126,7 @@ class Storage(object):
         return times_array, particles_array
 
     def add_trajectory(self, name, overwrite=False, shape=(0,), title='',
-                  chunksize=2**19, comp_filter=None,
+                  chunksize=2**19, comp_filter=default_compression,
                   atom=tables.Float64Atom(), params=dict()):
         """Add an trajectory array in '/trajectories'.
         """
@@ -158,7 +163,8 @@ class Storage(object):
             store_array.set_attr(key, value)
         return store_array
 
-    def add_emission_tot(self, chunksize=2**19, comp_filter=None,
+    def add_emission_tot(self, chunksize=2**19, 
+                         comp_filter=default_compression,
                          overwrite=False, params=dict()):
         """Add the `emission_tot` array in '/trajectories'.
         """
@@ -168,7 +174,7 @@ class Storage(object):
                 title = 'Summed emission trace of all the particles',
                 params=params)
 
-    def add_emission(self, chunksize=2**19, comp_filter=None,
+    def add_emission(self, chunksize=2**19, comp_filter=default_compression,
                      overwrite=False, params=dict()):
         """Add the `emission` array in '/trajectories'.
         """
@@ -181,7 +187,7 @@ class Storage(object):
                 title = 'Emission trace of each particle',
                 params=params)
     
-    def add_position(self, chunksize=2**19, comp_filter=None,
+    def add_position(self, chunksize=2**19, comp_filter=default_compression,
                      overwrite=False, params=dict()):
         """Add the `position` array in '/trajectories'.
         """
@@ -194,8 +200,9 @@ class Storage(object):
                 title = 'Position trace of each particle',
                 params=params)
 
-    def add_timetrace_tot(self, chunksize=2**19, comp_filter=None,
-                            overwrite=False):
+    def add_timetrace_tot(self, chunksize=2**19, 
+                          comp_filter=default_compression,
+                          overwrite=False):
         """Add the `timetrace_tot` array in '/trajectories'.
         """
         return self.add_trajectory('timetrace_tot', overwrite=overwrite,
@@ -203,8 +210,8 @@ class Storage(object):
                 atom=tables.UInt8Atom(),
                 title = 'Timetrace of emitted photons with bin = t_step')
 
-    def add_timetrace(self, chunksize=2**19, comp_filter=None,
-                            overwrite=False):
+    def add_timetrace(self, chunksize=2**19, comp_filter=default_compression,
+                      overwrite=False):
         """Add the `timetrace` array in '/trajectories'.
         """
         group = self.data_file.root.trajectories

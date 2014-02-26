@@ -196,9 +196,11 @@ class ParticlesSimulation(object):
         self.store.data_file.create_hard_link('/psf', 'default_psf', 
                                               target=self.psf_pytables)
 
-        kwargs = dict(chunksize=self.chunksize, comp_filter=comp_filter,
+        kwargs = dict(chunksize=self.chunksize,
                       params=dict(psf_fname=self.psf.fname, seed=seed))
                       # Note psf.fname is the psf name in `data_file.root.psf`
+        if comp_filter is not None: 
+            kwargs.update(comp_filter=comp_filter)
         self.emission_tot = self.store.add_emission_tot(**kwargs)
         self.emission = self.store.add_emission(**kwargs)
 
