@@ -72,8 +72,8 @@ class NumericPSF:
         self.x_step, self.z_step = xi[1] - xi[0], zi[1] - zi[0]
         self.kind = 'numeric'
 
-    def eval_xz(self,x,z):
-        """Evaluate the function in (x, z).
+    def eval_xz(self, x, z):
+        """Evaluate the function in (x, z) (micro-meters).
         The function is rotationally symmetric around z.
         """
         return self._fun_um.ev(x*1e6, z*1e6)

@@ -103,9 +103,10 @@ class ParticlesSimulation(object):
         self.sigma = sqrt(2*D*3*t_step)
 
     def __repr__(self):
+        pM = self.concentration(pM=True)
         s = repr(self.box)
-        s += "\nD %.2g, #Particles %d, t_step %.1fus, t_max %.1fs" % (
-                self.D, self.np, self.t_step*1e6, self.t_max)
+        s += "\nD %.2g, #Particles %d, %.1f pM, t_step %.1fus, t_max %.1fs" %\
+                (self.D, self.np, pM, self.t_step*1e6, self.t_max)
         s += " EID_ID %d %d" % (self.EID, self.ID)
         return s
     
@@ -168,10 +169,12 @@ class ParticlesSimulation(object):
                 (size_MB*self.np)
         print "  Position array size: %.1f MB " % (3*size_MB*self.np)
 
-    def concentration(self):
+    def concentration(self, pM=False):
         """Return the concentration (in Moles) of the particles in the box.
         """
-        return (self.np/NA)/self.box.volume_L()
+        concentr = (self.np/NA)/self.box.volume_L()
+        if pM: concentr *= 1e12
+        return concentr
 
     def reopen_store(self):
         """Reopen a closed store in read-only mode."""
@@ -217,18 +220,22 @@ class ParticlesSimulation(object):
         """
         if 'store' not in self.__dict__:
             self.open_store(seed=seed)
+        em_store = self.emission_tot if total_emission else self.emission
         
         if seed is not None:
             np.random.seed(seed)
-        for c_size in iter_chunksize(self.n_samples, self.chunksize):
+        print '[PID %d] Simulation chunk:' % os.getpid(),
+        i_chunk = 0
+        t_chunk_size = self.emission.chunkshape[1]
+        for c_size in iter_chunksize(self.n_samples, t_chunk_size):
+            print i_chunk, c_size,          
             if total_emission:
                 em = np.zeros((c_size), dtype=np.float64)
             else:
                 em = np.zeros((self.np, c_size), dtype=np.float64)
             POS = []
-            pid = os.getpid()
+            
             for i, p in enumerate(self.particles):
-                print "[%4d] Simulating particle %d " % (pid, i)
                 delta_pos = NR.normal(loc=0, scale=self.sigma, size=3*c_size)
                 delta_pos = delta_pos.reshape(3, c_size)
                 pos = np.cumsum(delta_pos, axis=-1, out=delta_pos)
@@ -253,9 +260,9 @@ class ParticlesSimulation(object):
             ## Append em to the permanent storage
             # if total_emission is just a linear array
             # otherwise is an hstack of what is saved and em (self.np, c_size)
-            em_store = self.emission_tot if total_emission else self.emission
             em_store.append(em)
             if not delete_pos: self.pos = np.concatenate(POS)
+            i_chunk += 1
         em_store.flush()
     
     def sim_timestamps_em_list(self, max_rate=1, bg_rate=0, seed=1):
@@ -491,7 +498,7 @@ def sim_timetrace_bg(emission, max_rate, bg_rate, t_step):
     Return an uint8 array of counts with shape[0] == emission.shape[0] + 1.
     The last row is a "fake" particle representing Poisson background.
     """
-    em = np.atleast_2d(emission)
+    em = np.atleast_2d(emission).astype('float64', copy=False)
     counts = np.zeros((em.shape[0] + 1, em.shape[1]), dtype='u1')   
     # In-place computation
     # NOTE: the caller will see the modification
