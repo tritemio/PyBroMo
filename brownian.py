@@ -185,7 +185,7 @@ class ParticlesSimulation(object):
         self.chunksize = S.store.data_file.get_node('/parameters', 'chunksize')
 
     def open_store(self, prefix='pybromo_', chunksize=2**18, overwrite=True,
-                   comp_filter=None, seed=1):
+                   comp_filter=None):
         nparams = self.get_nparams()
         self.chunksize = chunksize
         nparams.update(chunksize=(chunksize, 'Chunksize for arrays'))     
@@ -200,7 +200,7 @@ class ParticlesSimulation(object):
                                               target=self.psf_pytables)
 
         kwargs = dict(chunksize=self.chunksize,
-                      params=dict(psf_fname=self.psf.fname, seed=seed))
+                      params=dict(psf_fname=self.psf.fname))
                       # Note psf.fname is the psf name in `data_file.root.psf`
         if comp_filter is not None: 
             kwargs.update(comp_filter=comp_filter)
@@ -219,7 +219,7 @@ class ParticlesSimulation(object):
                 array (#particles x time). Otherwise `.em` is (1 x time).
         """
         if 'store' not in self.__dict__:
-            self.open_store(seed=seed)
+            self.open_store()
         em_store = self.emission_tot if total_emission else self.emission
         
         if seed is not None:
@@ -263,6 +263,7 @@ class ParticlesSimulation(object):
             em_store.append(em)
             if not delete_pos: self.pos = np.concatenate(POS)
             i_chunk += 1
+        em_store.set_attr('seed', seed)
         em_store.flush()
     
     def sim_timestamps_em_list(self, max_rate=1, bg_rate=0, seed=1):
