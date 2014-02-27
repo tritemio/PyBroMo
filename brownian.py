@@ -685,9 +685,11 @@ def plot_timetrace(S, rebin=2e3, scroll_gui=False):
     if scroll_gui: return ScrollingToolQT(fig)
 
 
-def gen_particles(N, box):
+def gen_particles(N, box, seed=None):
     """Generate `N` Particle() objects with random position in `box`.
     """
+    if seed is not None:
+        np.random.seed(seed)
     X0 = NR.rand(N)*(box.x2-box.x1) + box.x1
     Y0 = NR.rand(N)*(box.y2-box.y1) + box.y1
     Z0 = NR.rand(N)*(box.z2-box.z1) + box.z1
