@@ -1,6 +1,9 @@
 """
 This module provides classes to compute PSF functions either starting from
 an analytical formula (i.e. Gaussian) or by interpolation of a precomputed PSF.
+
+File part of PyBroMo: a single molecule diffusion simulator.
+Copyright (C) 2013-2014 Antonino Ingargiola tritemio@gmail.com
 """
 
 import os
