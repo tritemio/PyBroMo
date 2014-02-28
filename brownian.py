@@ -566,18 +566,21 @@ def load_sim_id(ID, glob_str='*', EID=None, dir_='.', prefix='bromo_sim',
 ##
 # Functions to manage/merge multiple simulations
 #
-def merge_ph_times(ph_times_list, time_block):
+def merge_ph_times(times_list, times_par_list, time_block):
     """Build an array of timestamps joining the arrays in `ph_times_list`.
     `time_block` is the duration of each array of timestamps.
     """
-    offsets = np.arange(len(ph_times_list))*time_block
-    cum_sizes = np.cumsum([ph.size for ph in ph_times_list])
-    ph_times = np.zeros(cum_sizes[-1])
+    offsets = np.arange(len(times_list))*time_block
+    cum_sizes = np.cumsum([ts.size for ts in times_list])
+    times = np.zeros(cum_sizes[-1])
+    times_par = np.zeros(cum_sizes[-1], dtype='uint8')
     i1 = 0
-    for i2, ph, offset in zip(cum_sizes, ph_times_list, offsets):
-        ph_times[i1:i2] = ph + offset
+    for i2, ts, ts_par, offset in zip(cum_sizes, times_list, times_par_list, 
+                                      offsets):
+        times[i1:i2] = ts + offset
+        times_par[i1:i2] = ts_par
         i1 = i2
-    return ph_times
+    return times, times_par
 
 def merge_DA_ph_times(ph_times_d, ph_times_a):
     """Returns a merged timestamp array for Donor+Accept. and bool mask for A.
@@ -608,19 +611,21 @@ def parallel_gen_timestamps(dview, max_em_rate, bg_rate):
     from these emission traces and merged into a single array of timestamps.
     `max_em_rate` and `bg_rate` are passed to `S.sim_timetrace()`.
     """
-    dview.execute("S.sim_timetrace(max_em_rate=%f, bg_rate=%f)" % \
-            (max_em_rate, bg_rate))
-    dview.execute("S.gen_ph_times()")
-    PH = dview['S.ph_times']
+    dview.execute('S.sim_timestamps_em_store(max_rate=%d, bg_rate=%d, '
+                  'seed=S.EID, overwrite=True)' % (max_em_rate, bg_rate))
+    dview.execute('times = S.timestamps[:]')
+    dview.execute('times_par = S.timestamps_par[:]')
+    Times = dview['times']
+    Times_par = dview['times_par']
     # Assuming all t_max equal, just take the first
     t_max = dview['S.t_max'][0]
     t_tot = np.sum(dview['S.t_max'])
-    dview.execute("sim_name = S.compact_name_core()")
+    dview.execute("sim_name = S.compact_name_core(t_max=False, hashdigit=0)")
     # Core names contains no ID or t_max
     sim_name = dview['sim_name'][0]
-    ph_times = merge_ph_times(PH, time_block=t_max)
-    return ph_times, t_tot, sim_name
-
+    times_all, times_par_all = merge_ph_times(Times, Times_par, 
+                                              time_block=t_max)
+    return times_all, times_par_all, t_tot, sim_name
 
 
 def gen_particles(N, box, seed=None):
