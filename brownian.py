@@ -29,6 +29,13 @@ import brownian_plot as bpl
 NA = 6.022141e23    # [mol^-1]
 
 
+def get_seed(seed, ID=0, EID=0):
+    """Get a random seed that is a combination of `seed`, `ID` and `EID`.
+    Provides different, but deterministic, seeds in parallel computations
+    """
+    return seed + EID + 100*ID
+
+
 class Box:
     """The simulation box"""
     def __init__(self, x1, x2, y1, y2, z1, z2):
@@ -240,6 +247,7 @@ class ParticlesSimulation(object):
         em_store = self.emission_tot if total_emission else self.emission
         
         if seed is not None:
+            seed = get_seed(seed, ID=self.ID, EID=self.EID)           
             np.random.seed(seed)
         print '[PID %d] Simulation chunk:' % os.getpid(),
         i_chunk = 0
@@ -288,7 +296,8 @@ class ParticlesSimulation(object):
         Each element contains timestamps from one chunk of emission.
         Background computed internally.       
         """
-        if seed is not None: np.random.seed(seed)
+        if seed is not None:
+            np.random.seed(get_seed(seed, ID=self.ID, EID=self.EID))
         fractions = [5, 2, 8, 4, 9, 1, 7, 3, 6, 9, 0, 5, 2, 8, 4, 9]
         scale = 10
         max_counts = 4
@@ -347,7 +356,8 @@ class ParticlesSimulation(object):
         Each element contains timestamps from one chunk of emission.
         Background computed in sim_timetrace_bg() as last fake particle.        
         """
-        if seed is not None: np.random.seed(seed)
+        if seed is not None:
+            np.random.seed(get_seed(seed, ID=self.ID, EID=self.EID))
         fractions = [5, 2, 8, 4, 9, 1, 7, 3, 6, 9, 0, 5, 2, 8, 4, 9]
         scale = 10
         max_counts = 4
@@ -397,7 +407,8 @@ class ParticlesSimulation(object):
         Each element contains timestamps from one chunk of emission.
         Background computed in sim_timetrace_bg2() as last fake particle.        
         """
-        if seed is not None: np.random.seed(seed)        
+        if seed is not None: 
+            np.random.seed(get_seed(seed, ID=self.ID, EID=self.EID))
         fractions = [5, 2, 8, 4, 9, 1, 7, 3, 6, 9, 0, 5, 2, 8, 4, 9]
         scale = 10
         max_counts = 4
@@ -453,7 +464,8 @@ class ParticlesSimulation(object):
         Each element contains timestamps from one chunk of emission.
         Background computed in sim_timetrace_bg() as last fake particle.        
         """
-        if seed is not None: np.random.seed(seed)
+        if seed is not None: 
+            np.random.seed(get_seed(seed, ID=self.ID, EID=self.EID))
         fractions = [5, 2, 8, 4, 9, 1, 7, 3, 6, 9, 0, 5, 2, 8, 4, 9]
         scale = 10
         max_counts = 4
