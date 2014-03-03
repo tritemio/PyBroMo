@@ -59,6 +59,17 @@ class Particle:
         self.r0 = array([x0, y0, z0])
 
 
+def gen_particles(N, box, seed=None):
+    """Generate `N` Particle() objects with random position in `box`.
+    """
+    if seed is not None:
+        np.random.seed(seed)
+    X0 = NR.rand(N)*(box.x2-box.x1) + box.x1
+    Y0 = NR.rand(N)*(box.y2-box.y1) + box.y1
+    Z0 = NR.rand(N)*(box.z2-box.z1) + box.z1
+    return [Particle(x0=x0, y0=y0, z0=z0) for x0, y0, z0 in zip(X0, Y0, Z0)]
+
+
 def wrap_periodic(a, a1, a2):
     """Folds all the values of `a` outside [a1..a2] inside that intervall.
     This function is used to apply periodic boundary contitions.
@@ -136,7 +147,7 @@ class ParticlesSimulation(object):
         """
         # this can be made more robust for ID > 9 (double digit)
         s = self.compact_name_core(hashdigits, t_max=True)
-        s += "_ID%d-%d" % (self.EID, self.ID)
+        s += "_ID%d-%d" % (self.ID, self.EID)
         return s
     
     def get_nparams(self):
@@ -227,7 +238,7 @@ class ParticlesSimulation(object):
         i_chunk = 0
         t_chunk_size = self.emission.chunkshape[1]
         for c_size in iter_chunksize(self.n_samples, t_chunk_size):
-            print i_chunk, c_size,          
+            print i_chunk,           
             if total_emission:
                 em = np.zeros((c_size), dtype=np.float32)
             else:
@@ -626,17 +637,6 @@ def parallel_gen_timestamps(dview, max_em_rate, bg_rate):
     times_all, times_par_all = merge_ph_times(Times, Times_par, 
                                               time_block=t_max)
     return times_all, times_par_all, t_tot, sim_name
-
-
-def gen_particles(N, box, seed=None):
-    """Generate `N` Particle() objects with random position in `box`.
-    """
-    if seed is not None:
-        np.random.seed(seed)
-    X0 = NR.rand(N)*(box.x2-box.x1) + box.x1
-    Y0 = NR.rand(N)*(box.y2-box.y1) + box.y1
-    Z0 = NR.rand(N)*(box.z2-box.z1) + box.z1
-    return [Particle(x0=x0, y0=y0, z0=z0) for x0, y0, z0 in zip(X0, Y0, Z0)]
 
 
 if __name__ == '__main__':
