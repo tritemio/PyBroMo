@@ -539,7 +539,10 @@ def sim_timetrace_bg2(emission, max_rate, bg_rate, t_step):
     return counts
 
 def load_simulation(fname):
-    store = Storage(fname, overwrite=False)
+    fnames = glob(fname)
+    if len(fnames) > 1:
+        raise ValueError('Glob matched more than 1 file!')
+    store = Storage(fnames[0], overwrite=False)
     nparams = store.get_sim_nparams()
     
     psf_pytables = store.data_file.get_node('/psf/default_psf')
