@@ -59,6 +59,12 @@ class Particle:
         self.r0 = array([x0, y0, z0])
 
 
+class Particles(list):
+    """Custom list containing many Particle()"""
+    def __init__(self, init_list=None, seed=None):
+        super(Particles, self).__init__(init_list)
+        self.seed = seed
+
 def gen_particles(N, box, seed=None):
     """Generate `N` Particle() objects with random position in `box`.
     """
@@ -67,7 +73,8 @@ def gen_particles(N, box, seed=None):
     X0 = NR.rand(N)*(box.x2-box.x1) + box.x1
     Y0 = NR.rand(N)*(box.y2-box.y1) + box.y1
     Z0 = NR.rand(N)*(box.z2-box.z1) + box.z1
-    return [Particle(x0=x0, y0=y0, z0=z0) for x0, y0, z0 in zip(X0, Y0, Z0)]
+    part = [Particle(x0=x0, y0=y0, z0=z0) for x0, y0, z0 in zip(X0, Y0, Z0)]
+    return Particles(part, seed=seed)
 
 
 def wrap_periodic(a, a1, a2):
