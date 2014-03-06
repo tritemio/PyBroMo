@@ -196,7 +196,7 @@ class Storage(object):
         return self.add_trajectory('position', shape=(num_particles, 3, 0),
                 overwrite=overwrite, chunksize=chunksize,
                 comp_filter=comp_filter, atom=tables.Float32Atom(),
-                title = 'Position trace of each particle',
+                title = '3-D position trace of each particle',
                 params=params)
 
     def add_timetrace_tot(self, chunksize=2**19, 

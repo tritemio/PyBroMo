@@ -306,6 +306,8 @@ class ParticlesSimulation(object):
             if save_pos: 
                 self.position.append(np.vstack(POS).astype('float32'))
             i_chunk += 1
+        if save_pos: 
+            self.position.set_attr('seed', seed)
         em_store.set_attr('seed', seed)
         em_store.flush()
     
