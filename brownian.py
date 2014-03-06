@@ -230,9 +230,10 @@ class ParticlesSimulation(object):
             kwargs.update(comp_filter=comp_filter)
         self.emission_tot = self.store.add_emission_tot(**kwargs)
         self.emission = self.store.add_emission(**kwargs)
+        self.position = self.store.add_position(**kwargs)
 
-    def sim_motion_em_chunk(self, delete_pos=True, total_emission=True, 
                             seed=1):
+    def sim_motion_em_chunk(self, save_pos=False, total_emission=True, 
         """Simulate Brownian motion and emission rates in one step.
         This method simulates sequentially one particle a time (uses less RAM).
         `delete_pos` allows to discard the particle trajectories and save only
@@ -252,19 +253,24 @@ class ParticlesSimulation(object):
         print '[PID %d] Simulation chunk:' % os.getpid(),
         i_chunk = 0
         t_chunk_size = self.emission.chunkshape[1]
+                
+        par_start_pos = [p.r0 for p in self.particles]
+        par_start_pos = np.vstack(par_start_pos).reshape(self.np, 3, 1)
         for c_size in iter_chunksize(self.n_samples, t_chunk_size):
             print i_chunk,           
             if total_emission:
                 em = np.zeros((c_size), dtype=np.float32)
             else:
                 em = np.zeros((self.np, c_size), dtype=np.float32)
-            POS = []
             
-            for i, p in enumerate(self.particles):
+            POS = []
+            #pos_w = np.zeros((3, c_size))
+            for i in xrange(len(self.particles)):
                 delta_pos = NR.normal(loc=0, scale=self.sigma, size=3*c_size)
                 delta_pos = delta_pos.reshape(3, c_size)
                 pos = np.cumsum(delta_pos, axis=-1, out=delta_pos)
-                pos += p.r0.reshape(3, 1)
+                pos += par_start_pos[i]
+                
                 # Coordinates wrapping using periodic boundary conditions
                 for coord in (0, 1, 2):
                     pos[coord] = wrap_periodic(pos[coord], *self.box.b[coord])
@@ -280,13 +286,17 @@ class ParticlesSimulation(object):
                 else:
                     # Store the individual emission of current particle
                     em[i] = current_em.astype(np.float32)
-                if not delete_pos: POS.append(pos.reshape(1, 3, n_samples))
-
+                if save_pos: 
+                    POS.append(pos.reshape(1, 3, c_size))
+                # Save last position as next starting position
+                par_start_pos[i] = pos[:, -1:]
+                    
             ## Append em to the permanent storage
             # if total_emission is just a linear array
             # otherwise is an hstack of what is saved and em (self.np, c_size)
             em_store.append(em)
-            if not delete_pos: self.pos = np.concatenate(POS)
+            if save_pos: 
+                self.position.append(np.vstack(POS).astype('float32'))
             i_chunk += 1
         em_store.set_attr('seed', seed)
         em_store.flush()
