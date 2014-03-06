@@ -190,8 +190,8 @@ class ParticlesSimulation(object):
             )
         return nparams
 
-    def print_RAM(self):
-        """Print RAM needed to simulate the current set of parameters."""
+    def print_sizes(self):
+        """Print on-disk array sizes required for current set of parameters."""
         float_size = 4
         MB = 1024*1024
         size_ = (self.n_samples*float_size)
