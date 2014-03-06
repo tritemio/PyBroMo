@@ -86,11 +86,19 @@ def gen_particles(N, box, seed=None):
 
 def wrap_periodic(a, a1, a2):
     """Folds all the values of `a` outside [a1..a2] inside that intervall.
-    This function is used to apply periodic boundary contitions.
+    This function is used to apply periodic boundary conditions.
     """
     a -= a1
     wrapped = np.mod(a, a2-a1) + a1
     return wrapped
+
+def wrap_mirror(a, a1, a2):
+    """Folds all the values of `a` outside [a1..a2] inside that intervall.
+    This function is used to apply mirror-like boundary conditions.
+    """
+    a[a > a2] = a2 - (a[a > a2] - a2)
+    a[a < a1] = a1 + (a1 - a[a < a1])
+    return a
 
 
 class ParticlesSimulation(object):
@@ -232,8 +240,8 @@ class ParticlesSimulation(object):
         self.emission = self.store.add_emission(**kwargs)
         self.position = self.store.add_position(**kwargs)
 
-                            seed=1):
     def sim_motion_em_chunk(self, save_pos=False, total_emission=True, 
+                            seed=1, wrap_func=wrap_periodic):
         """Simulate Brownian motion and emission rates in one step.
         This method simulates sequentially one particle a time (uses less RAM).
         `delete_pos` allows to discard the particle trajectories and save only
@@ -273,7 +281,7 @@ class ParticlesSimulation(object):
                 
                 # Coordinates wrapping using periodic boundary conditions
                 for coord in (0, 1, 2):
-                    pos[coord] = wrap_periodic(pos[coord], *self.box.b[coord])
+                    pos[coord] = wrap_func(pos[coord], *self.box.b[coord])
 
                 # Sample the PSF along i-th trajectory then square to account
                 # for emission and detection PSF.
