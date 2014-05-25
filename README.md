@@ -8,7 +8,9 @@ PyBroMo allows to simulate timestamps of photons emitted during
 [smFRET](http://en.wikipedia.org/wiki/Single-molecule_FRET) experiments, 
 including sample background and detectors dark counts.
 
-The program simulates 3-D Brownian motion trajectories and emission of an arbitrary number of particles freely diffusing in a simulation volume (a box). 
+> For a smFRET burst analysis software see [FRETBursts](https://github.com/tritemio/FRETBursts).
+
+PyBromo simulates 3-D Brownian motion trajectories and emission of an arbitrary number of particles freely diffusing in a simulation volume (a box). 
 Inside the simulation box a laser excitation volume (the 
 [PSF](http://en.wikipedia.org/wiki/Point_spread_function) of the objective lens)
 is defined numerically or analytically (Gaussian shape).  Molecules diffusing 
