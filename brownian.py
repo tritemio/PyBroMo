@@ -123,14 +123,14 @@ class ParticlesSimulation(object):
         self.particles = particles
         self.box = box
         self.psf = psf
-        
+
         self.D = D
         self.np = len(particles)
         self.t_step = t_step
         self.t_max = t_max
         self.ID = ID
         self.EID = EID
-        
+
         self.n_samples = int(t_max/t_step)
         self.sigma = sqrt(2*D*3*t_step)
 
@@ -141,7 +141,7 @@ class ParticlesSimulation(object):
                 (self.D, self.np, pM, self.t_step*1e6, self.t_max)
         s += " EID_ID %d %d" % (self.EID, self.ID)
         return s
-    
+
     def hash(self):
         """Return an hash for the simulation parameters (excluding ID and EID)
         This can be used to generate unique file names for simulations
@@ -171,7 +171,7 @@ class ParticlesSimulation(object):
         s = self.compact_name_core(hashdigits, t_max=True)
         s += "_ID%d-%d" % (self.ID, self.EID)
         return s
-    
+
     def get_nparams(self):
         """Return a dict containing all the simulation numeric-parameters.
 
@@ -220,27 +220,27 @@ class ParticlesSimulation(object):
                    comp_filter=None):
         nparams = self.get_nparams()
         self.chunksize = chunksize
-        nparams.update(chunksize=(chunksize, 'Chunksize for arrays'))     
+        nparams.update(chunksize=(chunksize, 'Chunksize for arrays'))
         self.store_fname = prefix + self.compact_name() + '.hdf5'
-        
+
         attr_params = dict(particles=self.particles, box=self.box)
-        self.store = Storage(self.store_fname, nparams=nparams, 
+        self.store = Storage(self.store_fname, nparams=nparams,
                              attr_params=attr_params, overwrite=overwrite)
-      
+
         self.psf_pytables = self.psf.to_hdf5(self.store.data_file, '/psf')
-        self.store.data_file.create_hard_link('/psf', 'default_psf', 
+        self.store.data_file.create_hard_link('/psf', 'default_psf',
                                               target=self.psf_pytables)
 
         kwargs = dict(chunksize=self.chunksize,
                       params=dict(psf_fname=self.psf.fname))
                       # Note psf.fname is the psf name in `data_file.root.psf`
-        if comp_filter is not None: 
+        if comp_filter is not None:
             kwargs.update(comp_filter=comp_filter)
         self.emission_tot = self.store.add_emission_tot(**kwargs)
         self.emission = self.store.add_emission(**kwargs)
         self.position = self.store.add_position(**kwargs)
 
-    def sim_motion_em_chunk(self, save_pos=False, total_emission=True, 
+    def sim_motion_em_chunk(self, save_pos=False, total_emission=True,
                             seed=1, wrap_func=wrap_periodic):
         """Simulate Brownian motion and emission rates in one step.
         This method simulates sequentially one particle a time (uses less RAM).
@@ -254,23 +254,23 @@ class ParticlesSimulation(object):
         if 'store' not in self.__dict__:
             self.open_store()
         em_store = self.emission_tot if total_emission else self.emission
-        
+
         if seed is not None:
-            seed = get_seed(seed, ID=self.ID, EID=self.EID)           
+            seed = get_seed(seed, ID=self.ID, EID=self.EID)
             np.random.seed(seed)
         print '[PID %d] Simulation chunk:' % os.getpid(),
         i_chunk = 0
         t_chunk_size = self.emission.chunkshape[1]
-                
+
         par_start_pos = [p.r0 for p in self.particles]
         par_start_pos = np.vstack(par_start_pos).reshape(self.np, 3, 1)
         for c_size in iter_chunksize(self.n_samples, t_chunk_size):
-            print i_chunk,           
+            print i_chunk,
             if total_emission:
                 em = np.zeros((c_size), dtype=np.float32)
             else:
                 em = np.zeros((self.np, c_size), dtype=np.float32)
-            
+
             POS = []
             #pos_w = np.zeros((3, c_size))
             for i in xrange(len(self.particles)):
@@ -278,7 +278,7 @@ class ParticlesSimulation(object):
                 delta_pos = delta_pos.reshape(3, c_size)
                 pos = np.cumsum(delta_pos, axis=-1, out=delta_pos)
                 pos += par_start_pos[i]
-                
+
                 # Coordinates wrapping using periodic boundary conditions
                 for coord in (0, 1, 2):
                     pos[coord] = wrap_func(pos[coord], *self.box.b[coord])
@@ -294,50 +294,50 @@ class ParticlesSimulation(object):
                 else:
                     # Store the individual emission of current particle
                     em[i] = current_em.astype(np.float32)
-                if save_pos: 
+                if save_pos:
                     POS.append(pos.reshape(1, 3, c_size))
                 # Save last position as next starting position
                 par_start_pos[i] = pos[:, -1:]
-                    
+
             ## Append em to the permanent storage
             # if total_emission is just a linear array
             # otherwise is an hstack of what is saved and em (self.np, c_size)
             em_store.append(em)
-            if save_pos: 
+            if save_pos:
                 self.position.append(np.vstack(POS).astype('float32'))
             i_chunk += 1
         if save_pos: 
             self.position.set_attr('seed', seed)
         em_store.set_attr('seed', seed)
         em_store.flush()
-    
+
     def sim_timestamps_em_list(self, max_rate=1, bg_rate=0, seed=1):
         """Compute timestamps and particles and store results in a list.
         Each element contains timestamps from one chunk of emission.
-        Background computed internally.       
+        Background computed internally.
         """
         if seed is not None:
             np.random.seed(get_seed(seed, ID=self.ID, EID=self.EID))
         fractions = [5, 2, 8, 4, 9, 1, 7, 3, 6, 9, 0, 5, 2, 8, 4, 9]
         scale = 10
         max_counts = 4
-        
+
         self.all_times_chunks_list = []
         self.all_par_chunks_list = []
-        
+
         # Load emission in chunks, and save only the final timestamps
-        for i_start, i_end in iter_chunk_index(self.n_samples, 
+        for i_start, i_end in iter_chunk_index(self.n_samples,
                                                self.emission.chunkshape[1]):
-            counts_chunk = sim_timetrace(self.emission[:, i_start:i_end], 
+            counts_chunk = sim_timetrace(self.emission[:, i_start:i_end],
                                          max_rate, self.t_step)
-            counts_bg_chunk = NR.poisson(bg_rate*self.t_step, 
+            counts_bg_chunk = NR.poisson(bg_rate*self.t_step,
                                          size=counts_chunk.shape[1]
                                          ).astype('uint8')
             index = np.arange(0, counts_chunk.shape[1])
-            
+
             # Loop for each particle to compute timestamps
-            times_chunk_p = []      # <-- Try preallocating array 
-            par_index_chunk_p = []  # <-- Try preallocating array 
+            times_chunk_p = []      # <-- Try preallocating array
+            par_index_chunk_p = []  # <-- Try preallocating array
             for p_i, counts_chunk_p_i in enumerate(counts_chunk.copy()):
                 # Compute timestamps for paricle p_i for all bins with counts
                 times_c_i = [(index[counts_chunk_p_i >= 1] + i_start)*scale]
@@ -346,55 +346,55 @@ class ParticlesSimulation(object):
                     times_c_i.append(
                         (index[counts_chunk_p_i >= v] + i_start)*scale + frac
                         )
-                
+
                 # Stack the arrays from different "counts"
                 t = np.hstack(times_c_i)
                 times_chunk_p.append(t)
                 par_index_chunk_p.append(np.full(t.size, p_i, dtype='u1'))
-            
+
             # Simulate background for current chunk
             time_chunk_bg = (index[counts_bg_chunk >= 1] + i_start)*scale
             times_chunk_p.append(time_chunk_bg)
-            par_index_chunk_p.append(np.full(time_chunk_bg.size, p_i+1, 
+            par_index_chunk_p.append(np.full(time_chunk_bg.size, p_i+1,
                                              dtype='u1'))
-            
+
             # Merge the arrays of different particles
             times_chunk_s = np.hstack(times_chunk_p)  # <-- Try preallocating
             par_index_chunk_s = np.hstack(par_index_chunk_p)  # <-- this too
-            
+
             # Sort timestamps inside the merged chunk
             index_sort = times_chunk_s.argsort(kind='mergesort')
             times_chunk_s = times_chunk_s[index_sort]
             par_index_chunk_s = par_index_chunk_s[index_sort]
-    
+
             # Save (ordered) timestamps and corresponding particles
             self.all_times_chunks_list.append(times_chunk_s)
             self.all_par_chunks_list.append(par_index_chunk_s)
-        
+
     def sim_timestamps_em_list1(self, max_rate=1, bg_rate=0, seed=None):
         """Compute timestamps and particles and store results in a list.
         Each element contains timestamps from one chunk of emission.
-        Background computed in sim_timetrace_bg() as last fake particle.        
+        Background computed in sim_timetrace_bg() as last fake particle.
         """
         if seed is not None:
             np.random.seed(get_seed(seed, ID=self.ID, EID=self.EID))
         fractions = [5, 2, 8, 4, 9, 1, 7, 3, 6, 9, 0, 5, 2, 8, 4, 9]
         scale = 10
         max_counts = 4
-        
+
         self.all_times_chunks_list = []
         self.all_par_chunks_list = []
-        
+
         # Load emission in chunks, and save only the final timestamps
-        for i_start, i_end in iter_chunk_index(self.n_samples, 
+        for i_start, i_end in iter_chunk_index(self.n_samples,
                                                self.emission.chunkshape[1]):
-            counts_chunk = sim_timetrace_bg(self.emission[:, i_start:i_end], 
+            counts_chunk = sim_timetrace_bg(self.emission[:, i_start:i_end],
                                          max_rate, bg_rate, self.t_step)
             index = np.arange(0, counts_chunk.shape[1])
-            
+
             # Loop for each particle to compute timestamps
-            times_chunk_p = []      # <-- Try preallocating array 
-            par_index_chunk_p = []  # <-- Try preallocating array 
+            times_chunk_p = []      # <-- Try preallocating array
+            par_index_chunk_p = []  # <-- Try preallocating array
             for p_i, counts_chunk_p_i in enumerate(counts_chunk.copy()):
                 # Compute timestamps for paricle p_i for all bins with counts
                 times_c_i = [(index[counts_chunk_p_i >= 1] + i_start)*scale]
@@ -403,49 +403,49 @@ class ParticlesSimulation(object):
                     times_c_i.append(
                         (index[counts_chunk_p_i >= v] + i_start)*scale + frac
                         )
-                
+
                 # Stack the arrays from different "counts"
                 t = np.hstack(times_c_i)
                 times_chunk_p.append(t)
                 par_index_chunk_p.append(np.full(t.size, p_i, dtype='u1'))
-            
+
             # Merge the arrays of different particles
             times_chunk_s = np.hstack(times_chunk_p)  # <-- Try preallocating
             par_index_chunk_s = np.hstack(par_index_chunk_p)  # <-- this too
-            
+
             # Sort timestamps inside the merged chunk
             index_sort = times_chunk_s.argsort(kind='mergesort')
             times_chunk_s = times_chunk_s[index_sort]
             par_index_chunk_s = par_index_chunk_s[index_sort]
-    
+
             # Save (ordered) timestamps and corresponding particles
             self.all_times_chunks_list.append(times_chunk_s)
             self.all_par_chunks_list.append(par_index_chunk_s)
-   
+
     def sim_timestamps_em_list2(self, max_rate=1, bg_rate=0, seed=None):
         """Compute timestamps and particles and store results in a list.
         Each element contains timestamps from one chunk of emission.
-        Background computed in sim_timetrace_bg2() as last fake particle.        
+        Background computed in sim_timetrace_bg2() as last fake particle.
         """
-        if seed is not None: 
+        if seed is not None:
             np.random.seed(get_seed(seed, ID=self.ID, EID=self.EID))
         fractions = [5, 2, 8, 4, 9, 1, 7, 3, 6, 9, 0, 5, 2, 8, 4, 9]
         scale = 10
         max_counts = 4
-        
+
         self.all_times_chunks_list = []
         self.all_par_chunks_list = []
-        
+
         # Load emission in chunks, and save only the final timestamps
-        for i_start, i_end in iter_chunk_index(self.n_samples, 
+        for i_start, i_end in iter_chunk_index(self.n_samples,
                                                self.emission.chunkshape[1]):
-            counts_chunk = sim_timetrace_bg2(self.emission[:, i_start:i_end], 
+            counts_chunk = sim_timetrace_bg2(self.emission[:, i_start:i_end],
                                          max_rate, bg_rate, self.t_step)
             index = np.arange(0, counts_chunk.shape[1])
-            
+
             # Loop for each particle to compute timestamps
-            times_chunk_p = []      # <-- Try preallocating array 
-            par_index_chunk_p = []  # <-- Try preallocating array 
+            times_chunk_p = []      # <-- Try preallocating array
+            par_index_chunk_p = []  # <-- Try preallocating array
             for p_i, counts_chunk_p_i in enumerate(counts_chunk.copy()):
                 # Compute timestamps for paricle p_i for all bins with counts
                 times_c_i = [(index[counts_chunk_p_i >= 1] + i_start)*scale]
@@ -454,60 +454,60 @@ class ParticlesSimulation(object):
                     times_c_i.append(
                         (index[counts_chunk_p_i >= v] + i_start)*scale + frac
                         )
-                
+
                 # Stack the arrays from different "counts"
                 t = np.hstack(times_c_i)
                 times_chunk_p.append(t)
                 par_index_chunk_p.append(np.full(t.size, p_i, dtype='u1'))
-            
+
             # Merge the arrays of different particles
             times_chunk_s = np.hstack(times_chunk_p)  # <-- Try preallocating
             par_index_chunk_s = np.hstack(par_index_chunk_p)  # <-- this too
-            
+
             # Sort timestamps inside the merged chunk
             index_sort = times_chunk_s.argsort(kind='mergesort')
             times_chunk_s = times_chunk_s[index_sort]
             par_index_chunk_s = par_index_chunk_s[index_sort]
-    
+
             # Save (ordered) timestamps and corresponding particles
             self.all_times_chunks_list.append(times_chunk_s)
             self.all_par_chunks_list.append(par_index_chunk_s)
-    
+
     def _get_ts_name(self, max_rate=1, bg_rate=0, seed=1):
         return 'ts_max_rate%dkcps_bg%dcps_seed%s' % \
                             (max_rate*1e-3, bg_rate, seed)
 
     def sim_timestamps_em_store(self, max_rate=1, bg_rate=0, seed=1,
-                                chunksize=2**16, comp_filter=None, 
+                                chunksize=2**16, comp_filter=None,
                                 overwrite=False):
         """Compute timestamps and particles and store results in a list.
         Each element contains timestamps from one chunk of emission.
-        Background computed in sim_timetrace_bg() as last fake particle.        
+        Background computed in sim_timetrace_bg() as last fake particle.
         """
-        if seed is not None: 
+        if seed is not None:
             np.random.seed(get_seed(seed, ID=self.ID, EID=self.EID))
         fractions = [5, 2, 8, 4, 9, 1, 7, 3, 6, 9, 0, 5, 2, 8, 4, 9]
         scale = 10
         max_counts = 4
-        
+
         self.timestamps, self.tparticles = self.store.add_timestamps(
-                        name=self._get_ts_name(max_rate, bg_rate, seed), 
-                        clk_p=t_step/scale, 
+                        name=self._get_ts_name(max_rate, bg_rate, seed),
+                        clk_p=t_step/scale,
                         max_rate=max_rate, bg_rate=bg_rate,
                         num_particles=self.np, bg_particle=self.np,
-                        overwrite=overwrite, chunksize=chunksize, 
+                        overwrite=overwrite, chunksize=chunksize,
                         comp_filter=comp_filter)
-        
+
         # Load emission in chunks, and save only the final timestamps
-        for i_start, i_end in iter_chunk_index(self.n_samples, 
+        for i_start, i_end in iter_chunk_index(self.n_samples,
                                                self.emission.chunkshape[1]):
-            counts_chunk = sim_timetrace_bg(self.emission[:, i_start:i_end], 
+            counts_chunk = sim_timetrace_bg(self.emission[:, i_start:i_end],
                                          max_rate, bg_rate, self.t_step)
             index = np.arange(0, counts_chunk.shape[1])
-            
+
             # Loop for each particle to compute timestamps
-            times_chunk_p = []      # <-- Try preallocating array 
-            par_index_chunk_p = []  # <-- Try preallocating array 
+            times_chunk_p = []      # <-- Try preallocating array
+            par_index_chunk_p = []  # <-- Try preallocating array
             for p_i, counts_chunk_p_i in enumerate(counts_chunk.copy()):
                 # Compute timestamps for paricle p_i for all bins with counts
                 times_c_i = [(index[counts_chunk_p_i >= 1] + i_start)*scale]
@@ -516,21 +516,21 @@ class ParticlesSimulation(object):
                     times_c_i.append(
                         (index[counts_chunk_p_i >= v] + i_start)*scale + frac
                         )
-                
+
                 # Stack the arrays from different "counts"
                 t = np.hstack(times_c_i)
                 times_chunk_p.append(t)
                 par_index_chunk_p.append(np.full(t.size, p_i, dtype='u1'))
-            
+
             # Merge the arrays of different particles
             times_chunk_s = np.hstack(times_chunk_p)  # <-- Try preallocating
             par_index_chunk_s = np.hstack(par_index_chunk_p)  # <-- this too
-            
+
             # Sort timestamps inside the merged chunk
             index_sort = times_chunk_s.argsort(kind='mergesort')
             times_chunk_s = times_chunk_s[index_sort]
             par_index_chunk_s = par_index_chunk_s[index_sort]
-    
+
             # Save (ordered) timestamps and corresponding particles
             self.timestamps.append(times_chunk_s)
             self.tparticles.append(par_index_chunk_s)
@@ -538,7 +538,7 @@ class ParticlesSimulation(object):
 
 
 def sim_timetrace(emission, max_rate, t_step):
-    """Draw random emitted photons from Poisson(emission_rates).    
+    """Draw random emitted photons from Poisson(emission_rates).
     """
     emission_rates = emission*max_rate*t_step
     return NR.poisson(lam=emission_rates).astype(np.uint8)
@@ -549,7 +549,7 @@ def sim_timetrace_bg(emission, max_rate, bg_rate, t_step):
     The last row is a "fake" particle representing Poisson background.
     """
     em = np.atleast_2d(emission).astype('float64', copy=False)
-    counts = np.zeros((em.shape[0] + 1, em.shape[1]), dtype='u1')   
+    counts = np.zeros((em.shape[0] + 1, em.shape[1]), dtype='u1')
     # In-place computation
     # NOTE: the caller will see the modification
     em *= (max_rate*t_step)
@@ -563,8 +563,8 @@ def sim_timetrace_bg2(emission, max_rate, bg_rate, t_step):
     Return an uint8 array of counts with shape[0] == emission.shape[0] + 1.
     The last row is a "fake" particle representing Poisson background.
     """
-    emiss_bin_rate = np.zeros((emission.shape[0] + 1, emission.shape[1]), 
-                              dtype='float64')   
+    emiss_bin_rate = np.zeros((emission.shape[0] + 1, emission.shape[1]),
+                              dtype='float64')
     emiss_bin_rate[:-1] = emission*max_rate*t_step
     emiss_bin_rate[-1] = bg_rate*t_step
     counts = NR.poisson(lam=emiss_bin_rate).astype('uint8')
@@ -576,24 +576,25 @@ def load_simulation(fname):
         raise ValueError('Glob matched more than 1 file!')
     store = Storage(fnames[0], overwrite=False)
     nparams = store.get_sim_nparams()
-    
+
     psf_pytables = store.data_file.get_node('/psf/default_psf')
     psf = NumericPSF(psf_pytables=psf_pytables)
     box = store.data_file.get_node_attr('/parameters', 'box')
     P = store.data_file.get_node_attr('/parameters', 'particles')
-    
-    names = ['D', 't_step', 't_max', 'EID', 'ID']    
+
+    names = ['D', 't_step', 't_max', 'EID', 'ID']
     kwargs = dict()
     for n in names:
-        kwargs[n] = nparams[n]    
+        kwargs[n] = nparams[n]
     S = ParticlesSimulation(particles=P, box=box, psf=psf, **kwargs)
-    
-    # Emulate S.open_store()    
+
+    # Emulate S.open_store()
     S.store = store
     S.store_fname = fname
     S.psf_pytables = psf_pytables
     S.emission = S.store.data_file.root.trajectories.emission
     S.emission_tot = S.store.data_file.root.trajectories.emission_tot
+    S.position = S.store.data_file.root.trajectories.position
     S.chunksize = S.store.data_file.get_node('/parameters', 'chunksize')
     return S
 
@@ -628,7 +629,7 @@ def merge_ph_times(times_list, times_par_list, time_block):
     times = np.zeros(cum_sizes[-1])
     times_par = np.zeros(cum_sizes[-1], dtype='uint8')
     i1 = 0
-    for i2, ts, ts_par, offset in zip(cum_sizes, times_list, times_par_list, 
+    for i2, ts, ts_par, offset in zip(cum_sizes, times_list, times_par_list,
                                       offsets):
         times[i1:i2] = ts + offset
         times_par[i1:i2] = ts_par
@@ -676,7 +677,7 @@ def parallel_gen_timestamps(dview, max_em_rate, bg_rate):
     dview.execute("sim_name = S.compact_name_core(t_max=False, hashdigit=0)")
     # Core names contains no ID or t_max
     sim_name = dview['sim_name'][0]
-    times_all, times_par_all = merge_ph_times(Times, Times_par, 
+    times_all, times_par_all = merge_ph_times(Times, Times_par,
                                               time_block=t_max)
     return times_all, times_par_all, t_tot, sim_name
 
