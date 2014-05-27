@@ -592,6 +592,7 @@ def load_simulation(fname):
     S.psf_pytables = psf_pytables
     S.emission = S.store.data_file.root.trajectories.emission
     S.emission_tot = S.store.data_file.root.trajectories.emission_tot
+    S.position = S.store.data_file.root.trajectories.position
     S.chunksize = S.store.data_file.get_node('/parameters', 'chunksize')
     return S
 
