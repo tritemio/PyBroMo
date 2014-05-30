@@ -280,7 +280,7 @@ class ParticlesSimulation(object):
         self.emission = self.store.add_emission(**kwargs)
         self.position = self.store.add_position(**kwargs)
 
-    def sim_motion_em_chunk(self, save_pos=False, total_emission=True,
+    def sim_brownian_motion(self, save_pos=False, total_emission=True,
                             rs=None, seed=1, wrap_func=wrap_periodic):
         """Simulate Brownian motion trajectories and emission rates.
 
@@ -820,9 +820,7 @@ if __name__ == '__main__':
     # Brownian motion and emission simulation
     S = ParticlesSimulation(D=D, t_step=t_step, t_max=t_max,
                             particles=P, box=box, psf=psf)
-    #S.sim_motion_em(delete_pos=False)
-    #S.sim_timetrace(max_em_rate=3e5, bg_rate=10e3)
-    #S.gen_ph_times()
+    #S.sim_brownian_motion(delete_pos=False)
 
     #plot_tracks(S)
     #plot_emission(S)
