@@ -16,7 +16,7 @@ default_compression = tables.Filters(complevel=6, complib='blosc')
 
 
 class Storage(object):
-    def __init__(self, fname, nparams=dict(), attr_params=dict(), 
+    def __init__(self, fname, nparams=dict(), attr_params=dict(),
                  overwrite=True):
         """Return a new HDF5 file to store simulation results.
 
@@ -44,7 +44,7 @@ class Storage(object):
             self.data_file.create_group('/', 'psf',
                                    'PSFs used in the simulation')
             self.data_file.create_group('/', 'timestamps',
-                                   'Timestamps of emitted photons')   
+                                   'Timestamps of emitted photons')
             # Set the simulation parameters
             self.set_sim_params(nparams, attr_params)
 
@@ -75,7 +75,7 @@ class Storage(object):
                                         title=value[1])
         for name, value in attr_params.items():
                 self.data_file.set_node_attr('/parameters', name, value)
-    
+
     def get_sim_nparams(self):
         """Return a dict containing all (key, values) stored in '/parameters'
         """
@@ -97,7 +97,7 @@ class Storage(object):
 
     def add_timestamps(self, name, clk_p, max_rate, bg_rate,
                        num_particles, bg_particle,
-                       overwrite=False, chunksize=2**16, 
+                       overwrite=False, chunksize=2**16,
                        comp_filter=default_compression):
         if name in self.data_file.root.timestamps:
             if overwrite:
@@ -114,7 +114,7 @@ class Storage(object):
             title = 'Simulated photon timestamps')
         times_array.set_attr('clk_p', clk_p)
         times_array.set_attr('max_rate', max_rate)
-        times_array.set_attr('bg_rate', bg_rate)        
+        times_array.set_attr('bg_rate', bg_rate)
         particles_array = self.data_file.create_earray(
             '/timestamps', name+'_par', atom=tables.UInt8Atom(),
             shape = (0,),
@@ -159,13 +159,13 @@ class Storage(object):
             expectedrows = num_t_steps,
             filters = comp_filter,
             title = title)
-        
+
         # Set the array parameters/attributes
         for key, value in params.items():
             store_array.set_attr(key, value)
         return store_array
 
-    def add_emission_tot(self, chunksize=2**19, 
+    def add_emission_tot(self, chunksize=2**19,
                          comp_filter=default_compression,
                          overwrite=False, params=dict()):
         """Add the `emission_tot` array in '/trajectories'.
@@ -188,7 +188,7 @@ class Storage(object):
                 comp_filter=comp_filter, atom=tables.Float32Atom(),
                 title = 'Emission trace of each particle',
                 params=params)
-    
+
     def add_position(self, chunksize=2**19, comp_filter=default_compression,
                      overwrite=False, params=dict()):
         """Add the `position` array in '/trajectories'.
@@ -202,7 +202,7 @@ class Storage(object):
                 title = '3-D position trace of each particle',
                 params=params)
 
-    def add_timetrace_tot(self, chunksize=2**19, 
+    def add_timetrace_tot(self, chunksize=2**19,
                           comp_filter=default_compression,
                           overwrite=False):
         """Add the `timetrace_tot` array in '/trajectories'.
