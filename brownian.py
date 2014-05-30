@@ -530,9 +530,34 @@ class ParticlesSimulation(object):
             self.all_times_chunks_list.append(times_chunk_s)
             self.all_par_chunks_list.append(par_index_chunk_s)
 
-    def _get_ts_name(self, max_rate, bg_rate, rs_state, hashsize=3):
-        return '%s_ts_max_rate%dkcps_bg%dcps' % (
-                hash_(rs_state)[:hashsize], max_rate*1e-3, bg_rate)
+    def _get_ts_name_core(self, max_rate, bg_rate):
+        return 'max_rate%dkcps_bg%dcps' % (max_rate*1e-3, bg_rate)
+
+    def _get_ts_name(self, max_rate, bg_rate, rs_state, hashsize=4):
+        return self._get_ts_name_core(max_rate, bg_rate) + \
+                '_rs_%s' % hash_(rs_state)[:hashsize]
+
+    def get_timestamp(self, max_rate, bg_rate):
+        ts, ts_par = [], []
+        name = self._get_ts_name_core(max_rate, bg_rate)
+        for node in self.ts_group._f_list_nodes():
+            if name in node.name:
+                if node.name.endswith('_par'):
+                    ts_par.append(node)
+                else:
+                    ts.append(node)
+        if len(ts) == 0:
+            raise ValueError("No array matching '%s'" % name)
+        elif len(ts) > 1:
+            print 'WARNING: multiple matches, only the first is returned.'
+        return ts[0], ts_par[0]
+
+    def timestamp_names(self):
+        names = []
+        for node in self.ts_group._f_list_nodes():
+            if node.name.endswith('_par'): continue
+            names.append(node.name)
+        return names
 
     def sim_timestamps_em_store(self, max_rate=1, bg_rate=0, rs=None, seed=1,
                                 chunksize=2**16, comp_filter=None,
