@@ -72,14 +72,14 @@ class Particles(list):
         super(Particles, self).__init__(init_list)
         self.seed = seed
 
-def gen_particles(N, box, seed=None):
+def gen_particles(N, box, seed=1, rs=None):
     """Generate `N` Particle() objects with random position in `box`.
     """
-    if seed is not None:
-        np.random.seed(seed)
-    X0 = NR.rand(N)*(box.x2-box.x1) + box.x1
-    Y0 = NR.rand(N)*(box.y2-box.y1) + box.y1
-    Z0 = NR.rand(N)*(box.z2-box.z1) + box.z1
+    if rs is None:
+        rs = np.random.RandomState()
+    X0 = rs.rand(N)*(box.x2-box.x1) + box.x1
+    Y0 = rs.rand(N)*(box.y2-box.y1) + box.y1
+    Z0 = rs.rand(N)*(box.z2-box.z1) + box.z1
     part = [Particle(x0=x0, y0=y0, z0=z0) for x0, y0, z0 in zip(X0, Y0, Z0)]
     return Particles(part, seed=seed)
 
@@ -139,7 +139,7 @@ class ParticlesSimulation(object):
         s = repr(self.box)
         s += "\nD %.2g, #Particles %d, %.1f pM, t_step %.1fus, t_max %.1fs" %\
                 (self.D, self.np, pM, self.t_step*1e6, self.t_max)
-        s += " EID_ID %d %d" % (self.EID, self.ID)
+        s += " ID_EID %d %d" % (self.ID, self.EID)
         return s
 
     def hash(self):
@@ -216,6 +216,19 @@ class ParticlesSimulation(object):
         self.emission_tot = S.store.data_file.root.trajectories.emission_tot
         self.chunksize = S.store.data_file.get_node('/parameters', 'chunksize')
 
+    def _save_group_attr(self, group, attr_name, attr_value):
+        """Save attribute `attr_name` containing `attr_value` in `group`.
+        """
+        group = self.store.data_file.get_node(group)
+        group._v_attrs[attr_name] = attr_value
+
+    def _load_group_attr(self, group, attr_name):
+        """Load attribute `attr_name` from `group`.
+        """
+        group = self.store.data_file.get_node(group)
+        return group._v_attrs[attr_name]
+
+
     def open_store(self, prefix='pybromo_', chunksize=2**18, overwrite=True,
                    comp_filter=None):
         nparams = self.get_nparams()
@@ -230,10 +243,10 @@ class ParticlesSimulation(object):
         self.psf_pytables = self.psf.to_hdf5(self.store.data_file, '/psf')
         self.store.data_file.create_hard_link('/psf', 'default_psf',
                                               target=self.psf_pytables)
+        # Note psf.fname is the psf name in `data_file.root.psf`
+        self._save_group_attr('/trajectories', 'psf_name', self.psf.fname)
 
-        kwargs = dict(chunksize=self.chunksize,
-                      params=dict(psf_fname=self.psf.fname))
-                      # Note psf.fname is the psf name in `data_file.root.psf`
+        kwargs = dict(chunksize=self.chunksize,)
         if comp_filter is not None:
             kwargs.update(comp_filter=comp_filter)
         self.emission_tot = self.store.add_emission_tot(**kwargs)
@@ -241,7 +254,7 @@ class ParticlesSimulation(object):
         self.position = self.store.add_position(**kwargs)
 
     def sim_motion_em_chunk(self, save_pos=False, total_emission=True,
-                            seed=1, wrap_func=wrap_periodic):
+                            rs=None, seed=1, wrap_func=wrap_periodic):
         """Simulate Brownian motion and emission rates in one step.
         This method simulates sequentially one particle a time (uses less RAM).
         `delete_pos` allows to discard the particle trajectories and save only
@@ -251,13 +264,17 @@ class ParticlesSimulation(object):
                 particle (if False). In the latter case `.em` will be a 2D
                 array (#particles x time). Otherwise `.em` is (1 x time).
         """
+        if rs is None:
+            rs = np.random.RandomState(seed=seed)
+
         if 'store' not in self.__dict__:
             self.open_store()
+        # Save current random state for reproducibility
+        self._save_group_attr('/trajectories', 'init_random_state',
+                              rs.get_state())
+
         em_store = self.emission_tot if total_emission else self.emission
 
-        if seed is not None:
-            seed = get_seed(seed, ID=self.ID, EID=self.EID)
-            np.random.seed(seed)
         print '[PID %d] Simulation chunk:' % os.getpid(),
         i_chunk = 0
         t_chunk_size = self.emission.chunkshape[1]
@@ -274,7 +291,7 @@ class ParticlesSimulation(object):
             POS = []
             #pos_w = np.zeros((3, c_size))
             for i in xrange(len(self.particles)):
-                delta_pos = NR.normal(loc=0, scale=self.sigma, size=3*c_size)
+                delta_pos = rs.normal(loc=0, scale=self.sigma, size=3*c_size)
                 delta_pos = delta_pos.reshape(3, c_size)
                 pos = np.cumsum(delta_pos, axis=-1, out=delta_pos)
                 pos += par_start_pos[i]
@@ -306,18 +323,19 @@ class ParticlesSimulation(object):
             if save_pos:
                 self.position.append(np.vstack(POS).astype('float32'))
             i_chunk += 1
-        if save_pos: 
-            self.position.set_attr('seed', seed)
-        em_store.set_attr('seed', seed)
-        em_store.flush()
 
-    def sim_timestamps_em_list(self, max_rate=1, bg_rate=0, seed=1):
+        # Save current random state
+        self._save_group_attr('/trajectories', 'last_random_state',
+                              rs.get_state())
+        self.store.data_file.flush()
+
+    def sim_timestamps_em_list(self, max_rate=1, bg_rate=0, rs=None, seed=None):
         """Compute timestamps and particles and store results in a list.
         Each element contains timestamps from one chunk of emission.
         Background computed internally.
         """
-        if seed is not None:
-            np.random.seed(get_seed(seed, ID=self.ID, EID=self.EID))
+        if rs is None:
+            rs = np.random.RandomState(seed=seed)
         fractions = [5, 2, 8, 4, 9, 1, 7, 3, 6, 9, 0, 5, 2, 8, 4, 9]
         scale = 10
         max_counts = 4
@@ -330,7 +348,7 @@ class ParticlesSimulation(object):
                                                self.emission.chunkshape[1]):
             counts_chunk = sim_timetrace(self.emission[:, i_start:i_end],
                                          max_rate, self.t_step)
-            counts_bg_chunk = NR.poisson(bg_rate*self.t_step,
+            counts_bg_chunk = rs.poisson(bg_rate*self.t_step,
                                          size=counts_chunk.shape[1]
                                          ).astype('uint8')
             index = np.arange(0, counts_chunk.shape[1])
@@ -371,13 +389,13 @@ class ParticlesSimulation(object):
             self.all_times_chunks_list.append(times_chunk_s)
             self.all_par_chunks_list.append(par_index_chunk_s)
 
-    def sim_timestamps_em_list1(self, max_rate=1, bg_rate=0, seed=None):
+    def sim_timestamps_em_list1(self, max_rate=1, bg_rate=0, rs=None, seed=None):
         """Compute timestamps and particles and store results in a list.
         Each element contains timestamps from one chunk of emission.
         Background computed in sim_timetrace_bg() as last fake particle.
         """
-        if seed is not None:
-            np.random.seed(get_seed(seed, ID=self.ID, EID=self.EID))
+        if rs is None:
+            rs = np.random.RandomState(seed=seed)
         fractions = [5, 2, 8, 4, 9, 1, 7, 3, 6, 9, 0, 5, 2, 8, 4, 9]
         scale = 10
         max_counts = 4
@@ -389,7 +407,7 @@ class ParticlesSimulation(object):
         for i_start, i_end in iter_chunk_index(self.n_samples,
                                                self.emission.chunkshape[1]):
             counts_chunk = sim_timetrace_bg(self.emission[:, i_start:i_end],
-                                         max_rate, bg_rate, self.t_step)
+                                         max_rate, bg_rate, self.t_step, rs=rs)
             index = np.arange(0, counts_chunk.shape[1])
 
             # Loop for each particle to compute timestamps
@@ -422,13 +440,13 @@ class ParticlesSimulation(object):
             self.all_times_chunks_list.append(times_chunk_s)
             self.all_par_chunks_list.append(par_index_chunk_s)
 
-    def sim_timestamps_em_list2(self, max_rate=1, bg_rate=0, seed=None):
+    def sim_timestamps_em_list2(self, max_rate=1, bg_rate=0, rs=None, seed=None):
         """Compute timestamps and particles and store results in a list.
         Each element contains timestamps from one chunk of emission.
         Background computed in sim_timetrace_bg2() as last fake particle.
         """
-        if seed is not None:
-            np.random.seed(get_seed(seed, ID=self.ID, EID=self.EID))
+        if rs is None:
+            rs = np.random.RandomState(seed=seed)
         fractions = [5, 2, 8, 4, 9, 1, 7, 3, 6, 9, 0, 5, 2, 8, 4, 9]
         scale = 10
         max_counts = 4
@@ -440,7 +458,7 @@ class ParticlesSimulation(object):
         for i_start, i_end in iter_chunk_index(self.n_samples,
                                                self.emission.chunkshape[1]):
             counts_chunk = sim_timetrace_bg2(self.emission[:, i_start:i_end],
-                                         max_rate, bg_rate, self.t_step)
+                                         max_rate, bg_rate, self.t_step, rs=rs)
             index = np.arange(0, counts_chunk.shape[1])
 
             # Loop for each particle to compute timestamps
@@ -476,16 +494,28 @@ class ParticlesSimulation(object):
     def _get_ts_name(self, max_rate=1, bg_rate=0, seed=1):
         return 'ts_max_rate%dkcps_bg%dcps_seed%s' % \
                             (max_rate*1e-3, bg_rate, seed)
+    def _get_ts_name2(self, max_rate=1, bg_rate=0):
+        return 'ts_max_rate%dkcps_bg%dcps' % (max_rate*1e-3, bg_rate)
 
-    def sim_timestamps_em_store(self, max_rate=1, bg_rate=0, seed=1,
+    def sim_timestamps_em_store(self, max_rate=1, bg_rate=0, rs=None, seed=1,
                                 chunksize=2**16, comp_filter=None,
                                 overwrite=False):
         """Compute timestamps and particles and store results in a list.
         Each element contains timestamps from one chunk of emission.
         Background computed in sim_timetrace_bg() as last fake particle.
         """
-        if seed is not None:
-            np.random.seed(get_seed(seed, ID=self.ID, EID=self.EID))
+        if rs is None:
+            rs = np.random.RandomState(seed=seed)
+            # Try to set the random state from the last session to preserve
+            # a single random stream when simulating timestamps multiple times
+            ts_attrs = self.store.data_file.root.timestamps._v_attrs
+            if 'last_random_state' in ts_attrs._f_list():
+                rs.set_state(ts_attrs['last_random_state'])
+                print ("INFO: Random state set to last saved state"
+                       " in '/timestamps'.")
+            else:
+                print "INFO: Random state initialized from seed (%d)." % seed
+
         fractions = [5, 2, 8, 4, 9, 1, 7, 3, 6, 9, 0, 5, 2, 8, 4, 9]
         scale = 10
         max_counts = 4
@@ -497,12 +527,13 @@ class ParticlesSimulation(object):
                         num_particles=self.np, bg_particle=self.np,
                         overwrite=overwrite, chunksize=chunksize,
                         comp_filter=comp_filter)
+        self.timestamps.set_attr('init_random_state', rs.get_state())
 
         # Load emission in chunks, and save only the final timestamps
         for i_start, i_end in iter_chunk_index(self.n_samples,
                                                self.emission.chunkshape[1]):
             counts_chunk = sim_timetrace_bg(self.emission[:, i_start:i_end],
-                                         max_rate, bg_rate, self.t_step)
+                                         max_rate, bg_rate, self.t_step, rs=rs)
             index = np.arange(0, counts_chunk.shape[1])
 
             # Loop for each particle to compute timestamps
@@ -531,11 +562,14 @@ class ParticlesSimulation(object):
             times_chunk_s = times_chunk_s[index_sort]
             par_index_chunk_s = par_index_chunk_s[index_sort]
 
-            # Save (ordered) timestamps and corresponding particles
+            # Save (ordered) timestamps and corrensponding particles
             self.timestamps.append(times_chunk_s)
             self.tparticles.append(par_index_chunk_s)
-        self.store.data_file.flush()
 
+        # Save current random state so it can be resumed in the next session
+        self._save_group_attr('/timestamps', 'last_random_state',
+                              rs.get_state())
+        self.store.data_file.flush()
 
 def sim_timetrace(emission, max_rate, t_step):
     """Draw random emitted photons from Poisson(emission_rates).
@@ -543,31 +577,35 @@ def sim_timetrace(emission, max_rate, t_step):
     emission_rates = emission*max_rate*t_step
     return NR.poisson(lam=emission_rates).astype(np.uint8)
 
-def sim_timetrace_bg(emission, max_rate, bg_rate, t_step):
+def sim_timetrace_bg(emission, max_rate, bg_rate, t_step, rs=None):
     """Draw random emitted photons from Poisson(emission_rates).
     Return an uint8 array of counts with shape[0] == emission.shape[0] + 1.
     The last row is a "fake" particle representing Poisson background.
     """
+    if rs is None:
+        rs = np.random.RandomState()
     em = np.atleast_2d(emission).astype('float64', copy=False)
     counts = np.zeros((em.shape[0] + 1, em.shape[1]), dtype='u1')
     # In-place computation
     # NOTE: the caller will see the modification
     em *= (max_rate*t_step)
     # Use automatic type conversion int64 -> uint8
-    counts[:-1] = NR.poisson(lam=em)
-    counts[-1] = NR.poisson(lam=bg_rate*t_step, size=em.shape[1])
+    counts[:-1] = rs.poisson(lam=em)
+    counts[-1] = rs.poisson(lam=bg_rate*t_step, size=em.shape[1])
     return counts
 
-def sim_timetrace_bg2(emission, max_rate, bg_rate, t_step):
+def sim_timetrace_bg2(emission, max_rate, bg_rate, t_step, rs=None):
     """Draw random emitted photons from Poisson(emission_rates).
     Return an uint8 array of counts with shape[0] == emission.shape[0] + 1.
     The last row is a "fake" particle representing Poisson background.
     """
+    if rs is None:
+        rs = np.random.RandomState()
     emiss_bin_rate = np.zeros((emission.shape[0] + 1, emission.shape[1]),
                               dtype='float64')
     emiss_bin_rate[:-1] = emission*max_rate*t_step
     emiss_bin_rate[-1] = bg_rate*t_step
-    counts = NR.poisson(lam=emiss_bin_rate).astype('uint8')
+    counts = rs.poisson(lam=emiss_bin_rate).astype('uint8')
     return counts
 
 def load_simulation(fname):
@@ -596,26 +634,16 @@ def load_simulation(fname):
     S.emission_tot = S.store.data_file.root.trajectories.emission_tot
     S.position = S.store.data_file.root.trajectories.position
     S.chunksize = S.store.data_file.get_node('/parameters', 'chunksize')
+    if '/timestamps' in S.store.data_file:
+        S.ts_list = S.store.data_file.root.timestamps
+        name_list = S.ts_list._v_children.keys()
+        if len(name_list) == 2:
+            for name in name_list:
+                if name.endswith('_par'):
+                    S.tparticles = S.ts_list._f_get_child(name)
+                else:
+                    S.timestamps = S.ts_list._f_get_child(name)
     return S
-
-def load_sim_id(ID, glob_str='*', EID=None, dir_='.', prefix='bromo_sim',
-        verbose=False):
-    """Try to load a simulation with specified ID.
-    """
-    # NOTE: if EID is not passed use eid from global scope
-    if EID is None: EID = eid
-    Sim = None
-    try:
-        pattern = dir_+'/'+prefix+'%sID%d-%d.pickle' % (glob_str, EID, ID)
-        if verbose: print pattern
-        fname = glob(pattern)
-        if len(fname) > 1: print "ERROR: More than 1 file matched!"
-        assert len(fname) == 1
-        Sim = pickle.load(open(fname[0], 'rb'))
-        print "Loaded:\n", fname[0]
-    except:
-        print "No matching simulation file found."
-    return Sim
 
 ##
 # Functions to manage/merge multiple simulations
