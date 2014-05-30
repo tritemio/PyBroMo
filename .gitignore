@@ -3,3 +3,4 @@
 *.pyc
 *.hdf5
 notebooks/.ipynb_checkpoints/*
+*.lnk

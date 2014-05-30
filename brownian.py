@@ -231,6 +231,19 @@ class ParticlesSimulation(object):
 
     def open_store(self, prefix='pybromo_', chunksize=2**18, overwrite=True,
                    comp_filter=None):
+        """Open and setup the on-disk storage file (pytables HDF5 file).
+
+        Arguments:
+            prefix (string): file-name prefix for the HDF5 file
+            chunksize (int): chunk size used for the on-disk arrays saved
+                during the brownian motion simulation. Does not apply to
+                the timestamps arrays (see :method:``).
+            comp_filter (tables.Filter or None): compression filter to use
+                for the on-disk arrays saved during the brownian motion
+                simulation.
+            overwrite (bool): if True, overwrite the file if already exists.
+                All the previoulsy stored data in that file will be lost.
+        """
         nparams = self.get_nparams()
         self.chunksize = chunksize
         nparams.update(chunksize=(chunksize, 'Chunksize for arrays'))
@@ -255,14 +268,26 @@ class ParticlesSimulation(object):
 
     def sim_motion_em_chunk(self, save_pos=False, total_emission=True,
                             rs=None, seed=1, wrap_func=wrap_periodic):
-        """Simulate Brownian motion and emission rates in one step.
-        This method simulates sequentially one particle a time (uses less RAM).
-        `delete_pos` allows to discard the particle trajectories and save only
-                the emission.
-        `total_emission` choose to save a single emission array for all the
-                particles (if True), or save the emission of each single
-                particle (if False). In the latter case `.em` will be a 2D
-                array (#particles x time). Otherwise `.em` is (1 x time).
+        """Simulate Brownian motion trajectories and emission rates.
+
+        This method perfoms the Brownian motion simulation using the current
+        set of parameters. Before running this method you can check the
+        disk-space requirements using :method:`print_sizes`.
+
+        Results are stored to disk in HDF5 format and are accessible in
+        in `self.emission`, `self.emission_tot` and `self.position` as
+        pytables arrays.
+
+        Arguments:
+            save_pos (bool): if True, save the particles 3D trajectories
+            total_emission (bool): if True, store only the total emission array
+                containing the sum of emission of all the particles.
+            rs (RandomState object): random state object used as random number
+                generator. If None, use a random state initialized from seed.
+            seed (uint): when `rs` is None, `seed` is used to initialize the
+                random state, otherwise is ignored.
+            wrap_func (function): the function used to apply the boundary
+                condition (use :func:`wrap_periodic` or :func:`wrap_mirror`).
         """
         if rs is None:
             rs = np.random.RandomState(seed=seed)
@@ -500,9 +525,22 @@ class ParticlesSimulation(object):
     def sim_timestamps_em_store(self, max_rate=1, bg_rate=0, rs=None, seed=1,
                                 chunksize=2**16, comp_filter=None,
                                 overwrite=False):
-        """Compute timestamps and particles and store results in a list.
-        Each element contains timestamps from one chunk of emission.
-        Background computed in sim_timetrace_bg() as last fake particle.
+        """Compute timestamps and particles arrays and store results to disk.
+
+        The results are accessible as pytables arrays in `.timestamps` and
+        `.tparticles`. The background generated timestamps are assigned a
+        conventional particle number (last particle index + 1).
+
+        Arguments:
+            max_rate (float, cps): max emission rate for a single particle
+            bg_rate (float, cps): rate for a Poisson background process
+            chunksize (int): chunk size used for the on-disk timestamp array
+            comp_filter (tables.Filter or None): compression filter to use
+                for the on-disk `timestamps` and `tparticles` arrays.
+            rs (RandomState object): random state object used as random number
+                generator. If None, use a random state initialized from seed.
+            seed (uint): when `rs` is None, `seed` is used to initialize the
+                random state, otherwise is ignored.
         """
         if rs is None:
             rs = np.random.RandomState(seed=seed)
