@@ -35,6 +35,7 @@ def get_seed(seed, ID=0, EID=0):
     """
     return seed + EID + 100*ID
 
+hash_  = lambda x: hashlib.md5(repr(x)).hexdigest()
 
 class Box:
     """The simulation box"""
@@ -68,20 +69,30 @@ class Particle:
 
 class Particles(list):
     """Custom list containing many Particle()"""
-    def __init__(self, init_list=None, seed=None):
+    def __init__(self, init_list=None, init_random_state=None):
         super(Particles, self).__init__(init_list)
-        self.seed = seed
+        self.init_random_state = init_random_state
+        self.rs_hash = hash_(init_random_state)[:3]
 
-def gen_particles(N, box, seed=1, rs=None):
+def gen_particles(N, box, rs=None, seed=1):
     """Generate `N` Particle() objects with random position in `box`.
+
+    Arguments:
+        N (int): number of particles to be generated
+        box (Box object): the simulation box
+        rs (RandomState object): random state object used as random number
+            generator. If None, use a random state initialized from seed.
+        seed (uint): when `rs` is None, `seed` is used to initialize the
+            random state, otherwise is ignored.
     """
     if rs is None:
-        rs = np.random.RandomState()
+        rs = np.random.RandomState(seed=seed)
+    init_random_state = rs.get_state()
     X0 = rs.rand(N)*(box.x2-box.x1) + box.x1
     Y0 = rs.rand(N)*(box.y2-box.y1) + box.y1
     Z0 = rs.rand(N)*(box.z2-box.z1) + box.z1
     part = [Particle(x0=x0, y0=y0, z0=z0) for x0, y0, z0 in zip(X0, Y0, Z0)]
-    return Particles(part, seed=seed)
+    return Particles(part, init_random_state=init_random_state)
 
 
 def wrap_periodic(a, a1, a2):
@@ -105,20 +116,21 @@ class ParticlesSimulation(object):
     """Class that performs the Brownian motion simulation of N particles.
     """
     def __init__(self, D, t_step, t_max, particles, box, psf, EID=0, ID=0):
-        """Initialize the simulation parameters:
-        `D`: diffusion coefficient (m/s^2)
-        `t_step`: time step (s)
-        `particles`: list of `Particle` objects
-        `box`: a `Box` object defining the simulation boundaries
-        `psf`: a "PSF" object (`GaussianPSF` or `NumericPSF`) defining the PSF
-        `EID`: is an ID that identifies the engine on which the simulation
-            runs. It's a way to distinguish simulations that may otherwise
-            appear identical.
-        `ID`: is a number that identify the simulation, for ex. if you run
-            the same multiple times on the same engine you can assign different
-            ID.
-        The EID and ID are shown in the string representation and are used
-        to save unique file names.
+        """Initialize the simulation parameters.
+
+        Arguments:
+            D (float): diffusion coefficient (m/s^2)
+            t_step (float): time step (seconds)
+            particles (Particles object): initial particle position
+            box (Box object): the simulation boundaries
+            psf (GaussianPSF or NumericPSF object): the PSF used in simulation
+            EID (int): index for the engine on which the simulation is ran.
+                Used to distinguish simulations when using parallel computing.
+            ID (int): an index for the simulation. Can be used to distinguish
+                simulations that are run multiple times.
+
+        Note that EID and ID are shown in the string representation and are
+        used to save unique file names.
         """
         self.particles = particles
         self.box = box
@@ -229,7 +241,7 @@ class ParticlesSimulation(object):
         return group._v_attrs[attr_name]
 
 
-    def open_store(self, prefix='pybromo_', chunksize=2**18, overwrite=True,
+    def open_store(self, prefix='pybromo_', chunksize=2**19, overwrite=True,
                    comp_filter=None):
         """Open and setup the on-disk storage file (pytables HDF5 file).
 
@@ -258,6 +270,8 @@ class ParticlesSimulation(object):
                                               target=self.psf_pytables)
         # Note psf.fname is the psf name in `data_file.root.psf`
         self._save_group_attr('/trajectories', 'psf_name', self.psf.fname)
+        self.traj_group = self.store.data_file.root.trajectories
+        self.ts_group = self.store.data_file.root.timestamps
 
         kwargs = dict(chunksize=self.chunksize,)
         if comp_filter is not None:
@@ -516,11 +530,9 @@ class ParticlesSimulation(object):
             self.all_times_chunks_list.append(times_chunk_s)
             self.all_par_chunks_list.append(par_index_chunk_s)
 
-    def _get_ts_name(self, max_rate=1, bg_rate=0, seed=1):
-        return 'ts_max_rate%dkcps_bg%dcps_seed%s' % \
-                            (max_rate*1e-3, bg_rate, seed)
-    def _get_ts_name2(self, max_rate=1, bg_rate=0):
-        return 'ts_max_rate%dkcps_bg%dcps' % (max_rate*1e-3, bg_rate)
+    def _get_ts_name(self, max_rate, bg_rate, rs_state, hashsize=3):
+        return '%s_ts_max_rate%dkcps_bg%dcps' % (
+                hash_(rs_state)[:hashsize], max_rate*1e-3, bg_rate)
 
     def sim_timestamps_em_store(self, max_rate=1, bg_rate=0, rs=None, seed=1,
                                 chunksize=2**16, comp_filter=None,
@@ -558,13 +570,16 @@ class ParticlesSimulation(object):
         scale = 10
         max_counts = 4
 
+        name = self._get_ts_name(max_rate, bg_rate, rs.get_state())
         self.timestamps, self.tparticles = self.store.add_timestamps(
-                        name=self._get_ts_name(max_rate, bg_rate, seed),
-                        clk_p=t_step/scale,
-                        max_rate=max_rate, bg_rate=bg_rate,
-                        num_particles=self.np, bg_particle=self.np,
-                        overwrite=overwrite, chunksize=chunksize,
-                        comp_filter=comp_filter)
+                name = name,
+                clk_p = t_step/scale,
+                max_rate = max_rate, bg_rate=bg_rate,
+                num_particles = self.np,
+                bg_particle = self.np,
+                overwrite = overwrite,
+                chunksize = chunksize,
+                comp_filter = comp_filter)
         self.timestamps.set_attr('init_random_state', rs.get_state())
 
         # Load emission in chunks, and save only the final timestamps
@@ -668,19 +683,20 @@ def load_simulation(fname):
     S.store = store
     S.store_fname = fname
     S.psf_pytables = psf_pytables
+    S.traj_group = S.store.data_file.root.trajectories
+    S.ts_group = S.store.data_file.root.timestamps
     S.emission = S.store.data_file.root.trajectories.emission
     S.emission_tot = S.store.data_file.root.trajectories.emission_tot
     S.position = S.store.data_file.root.trajectories.position
     S.chunksize = S.store.data_file.get_node('/parameters', 'chunksize')
     if '/timestamps' in S.store.data_file:
-        S.ts_list = S.store.data_file.root.timestamps
-        name_list = S.ts_list._v_children.keys()
+        name_list = S.ts_group._v_children.keys()
         if len(name_list) == 2:
             for name in name_list:
                 if name.endswith('_par'):
-                    S.tparticles = S.ts_list._f_get_child(name)
+                    S.tparticles = S.ts_group._f_get_child(name)
                 else:
-                    S.timestamps = S.ts_list._f_get_child(name)
+                    S.timestamps = S.ts_group._f_get_child(name)
     return S
 
 ##
