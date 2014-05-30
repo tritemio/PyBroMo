@@ -70,7 +70,8 @@ class Storage(object):
             A dict whole items are stored as attributes in '/parameters'
         """
         for name, value in nparams.iteritems():
-            self.data_file.create_array('/parameters', name, obj=value[0],
+            val = value[0] if value[0] is not None else 'none'
+            self.data_file.create_array('/parameters', name, obj=val,
                                         title=value[1])
         for name, value in attr_params.items():
                 self.data_file.set_node_attr('/parameters', name, value)
@@ -142,7 +143,9 @@ class Storage(object):
         nparams = self.get_sim_nparams()
         num_t_steps = nparams['t_max']/nparams['t_step']
 
-        if len(shape) == 1:
+        if chunksize is None:
+            chunkshape = None
+        elif len(shape) == 1:
             chunkshape = (chunksize,)
         elif len(shape) == 2:
             chunkshape = (shape[0], chunksize/shape[0],)
