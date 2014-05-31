@@ -281,7 +281,8 @@ class ParticlesSimulation(object):
         self.position = self.store.add_position(**kwargs)
 
     def sim_brownian_motion(self, save_pos=False, total_emission=True,
-                            rs=None, seed=1, wrap_func=wrap_periodic):
+                            rs=None, seed=1, wrap_func=wrap_periodic,
+                            verbose=True):
         """Simulate Brownian motion trajectories and emission rates.
 
         This method perfoms the Brownian motion simulation using the current
@@ -302,6 +303,7 @@ class ParticlesSimulation(object):
                 random state, otherwise is ignored.
             wrap_func (function): the function used to apply the boundary
                 condition (use :func:`wrap_periodic` or :func:`wrap_mirror`).
+            verbose (bool): if False, prints no output.
         """
         if rs is None:
             rs = np.random.RandomState(seed=seed)
@@ -314,14 +316,14 @@ class ParticlesSimulation(object):
 
         em_store = self.emission_tot if total_emission else self.emission
 
-        print '[PID %d] Simulation chunk:' % os.getpid(),
+        if verbose: print '[PID %d] Simulation chunk:' % os.getpid(),
         i_chunk = 0
         t_chunk_size = self.emission.chunkshape[1]
 
         par_start_pos = [p.r0 for p in self.particles]
         par_start_pos = np.vstack(par_start_pos).reshape(self.np, 3, 1)
         for c_size in iter_chunksize(self.n_samples, t_chunk_size):
-            print i_chunk,
+            if verbose: print '.',
             if total_emission:
                 em = np.zeros((c_size), dtype=np.float32)
             else:
@@ -791,23 +793,23 @@ def parallel_gen_timestamps(dview, max_em_rate, bg_rate):
 
 if __name__ == '__main__':
     # Simulation time step
-    t_step = 0.5e-6     # seconds
+    #t_step = 0.5e-6     # seconds
 
     # Diffusion coefficient
-    Du = 12.0           # um^2 / s
-    D = Du*(1e-6)**2
+    #Du = 12.0           # um^2 / s
+    #D = Du*(1e-6)**2
 
     # Time duration of the simulation
-    t_max = 0.3        # seconds
-    n_samples = int(t_max/t_step)
+    #t_max = 0.3        # seconds
+    #n_samples = int(t_max/t_step)
 
     # PSF definition
     #ss = 0.2*1e-6      # lateral dimension (sigma)
     #psf = GaussianPSF(xc=0, yc=0, zc=0, sx=ss, sy=ss, sz=3*ss)
-    psf = NumericPSF()
+    #psf = NumericPSF()
 
     # Box definition
-    box = Box(x1=-4.e-6, x2=4.e-6, y1=-4.e-6, y2=4.e-6, z1=-6e-6, z2=6e-6)
+    #box = Box(x1=-4.e-6, x2=4.e-6, y1=-4.e-6, y2=4.e-6, z1=-6e-6, z2=6e-6)
 
     # Particles definition
     #p1 = Particle(x0=-3e-6)
@@ -815,13 +817,14 @@ if __name__ == '__main__':
     #p3 = Particle(y0=-3e-6)
     #p4 = Particle(y0=3e-6)
     #P = [p1,p2,p3,p4]
-    P = gen_particles(15, box)
+    #P = gen_particles(15, box)
 
     # Brownian motion and emission simulation
-    S = ParticlesSimulation(D=D, t_step=t_step, t_max=t_max,
-                            particles=P, box=box, psf=psf)
+    #S = ParticlesSimulation(D=D, t_step=t_step, t_max=t_max,
+    #                        particles=P, box=box, psf=psf)
     #S.sim_brownian_motion(delete_pos=False)
 
     #plot_tracks(S)
     #plot_emission(S)
+    pass
 
