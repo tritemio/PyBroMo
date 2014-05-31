@@ -600,8 +600,9 @@ class ParticlesSimulation(object):
         name = self._get_ts_name(max_rate, bg_rate, rs.get_state())
         self.timestamps, self.tparticles = self.store.add_timestamps(
                 name = name,
-                clk_p = t_step/scale,
-                max_rate = max_rate, bg_rate=bg_rate,
+                clk_p = self.t_step/scale,
+                max_rate = max_rate,
+                bg_rate = bg_rate,
                 num_particles = self.np,
                 bg_particle = self.np,
                 overwrite = overwrite,
