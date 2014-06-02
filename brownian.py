@@ -709,7 +709,7 @@ def load_simulation(fname):
 
     # Emulate S.open_store()
     S.store = store
-    S.store_fname = fname
+    S.store_fname = fnames[0]
     S.psf_pytables = psf_pytables
     S.traj_group = S.store.data_file.root.trajectories
     S.ts_group = S.store.data_file.root.timestamps
