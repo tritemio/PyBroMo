@@ -139,6 +139,11 @@ executed.
 * [2. Generate timestamps - Parallel](http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/PyBroMo%2520-%25202.%2520Generate%2520timestamps%2520-%2520Parallel.ipynb)
 * [3. Generate and export smFRET data](http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/PyBroMo%2520-%25203.%2520Generate%2520and%2520export%2520smFRET%2520data.ipynb)
 
+You may be also interested in a few notebooks on the theory of Brownian motion
+simulation (they don't require PyBroMo):
+
+* [Theory - Introduction to Brownian Motion simulation](http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/Theory%2520-%2520Introduction%2520to%2520Brownian%2520Motion%2520simulation.ipynb)
+* [Theory - On Browniam motion and Diffusion cofficient](http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/Theory%2520-%2520On%2520Browniam%2520motion%2520and%2520Diffusion%2520cofficient.ipynb)
 
 #Acknowledgements
 
