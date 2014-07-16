@@ -92,7 +92,7 @@ class ParticlesSimulation(object):
         self.ID = ID
         self.EID = EID
         self.n_samples = int(t_max/t_step)
-        self.sigma = sqrt(2*D*3*t_step)
+        self.sigma_1d = sqrt(2*D*t_step)
 
     def __repr__(self):
         s = repr(self.box)
@@ -169,7 +169,7 @@ class ParticlesSimulation(object):
         pid = os.getpid()
         for i, p in enumerate(self.particles):
             print "[%4d] Simulating particle %d " % (pid, i)
-            delta_pos = NR.normal(loc=0, scale=self.sigma, size=3*n_samples)
+            delta_pos = NR.normal(loc=0, scale=self.sigma_1d, size=3*n_samples)
             delta_pos = delta_pos.reshape(3, n_samples)
             pos = np.cumsum(delta_pos, axis=-1, out=delta_pos)
             pos += p.r0.reshape(3, 1)

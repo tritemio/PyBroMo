@@ -1,3 +1,6 @@
 *.dat
 *~
 *.pyc
+*.lnk
+notebooks/.ipynb_checkpoints/
+*.hdf5
