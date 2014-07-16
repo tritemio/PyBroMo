@@ -150,7 +150,8 @@ class ParticlesSimulation(object):
         """
         return (self.np/NA)/self.box.volume_L()
 
-    def sim_motion_em(self, delete_pos=True, total_emission=True):
+    def sim_motion_em(self, delete_pos=True, total_emission=True,
+                      wrap=True):
         """Simulate Brownian motion and emission rates in one step.
         This method simulates sequentially one particle a time (uses less RAM).
         `delete_pos` allows to discard the particle trajectories and save only
@@ -159,6 +160,7 @@ class ParticlesSimulation(object):
                 particles (if True), or save the emission of each single
                 particle (if False). In the latter case `.em` will be a 2D
                 array (#particles x time). Otherwise `.em` is (1 x time).
+        `wrap` (boolean) allows turning off wrapping for testing purposes.
         """
         n_samples = self.n_samples
         if total_emission:
@@ -173,9 +175,11 @@ class ParticlesSimulation(object):
             delta_pos = delta_pos.reshape(3, n_samples)
             pos = np.cumsum(delta_pos, axis=-1, out=delta_pos)
             pos += p.r0.reshape(3, 1)
-            # Coordinates wrapping using periodic boundary conditions
-            for coord in (0, 1, 2):
-                pos[coord] = wrap_periodic(pos[coord], *self.box.b[coord])
+
+            if wrap:
+                # Coordinates wrapping using periodic boundary conditions
+                for coord in (0, 1, 2):
+                    pos[coord] = wrap_periodic(pos[coord], *self.box.b[coord])
 
             # Sample the PSF along i-th trajectory then square to account
             # for emission and detection PSF.
