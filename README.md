@@ -8,7 +8,9 @@ PyBroMo allows to simulate timestamps of photons emitted during
 [smFRET](http://en.wikipedia.org/wiki/Single-molecule_FRET) experiments, 
 including sample background and detectors dark counts.
 
-The program simulates 3-D Brownian motion trajectories and emission of an arbitrary number of particles freely diffusing in a simulation volume (a box). 
+> For a smFRET burst analysis software see [FRETBursts](https://github.com/tritemio/FRETBursts).
+
+PyBromo simulates 3-D Brownian motion trajectories and emission of an arbitrary number of particles freely diffusing in a simulation volume (a box). 
 Inside the simulation box a laser excitation volume (the 
 [PSF](http://en.wikipedia.org/wiki/Point_spread_function) of the objective lens)
 is defined numerically or analytically (Gaussian shape).  Molecules diffusing 
@@ -83,7 +85,9 @@ Just right click on the *IPython Notebook icon* -> *Properties* and paste
 the notebook folder in *Start in*. Apply and close.
 
 Now, double click on the icon and a browser should pop up showing the list
-of notebooks. Chrome browser is suggested.
+of notebooks. Chrome browser is suggested (to set Chrome as the default browser
+in IPython see [this StackOverflow answer](http://stackoverflow.com/questions/15632663/launch-ipython-notebook-with-selected-browser)).
+
 
 ##Linux and Mac OS X
 
@@ -135,6 +139,11 @@ executed.
 * [2. Generate timestamps - Parallel](http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/PyBroMo%2520-%25202.%2520Generate%2520timestamps%2520-%2520Parallel.ipynb)
 * [3. Generate and export smFRET data](http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/PyBroMo%2520-%25203.%2520Generate%2520and%2520export%2520smFRET%2520data.ipynb)
 
+You may be also interested in a few notebooks on the theory of Brownian motion
+simulation (they don't require PyBroMo):
+
+* [Theory - Introduction to Brownian Motion simulation](http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/Theory%2520-%2520Introduction%2520to%2520Brownian%2520Motion%2520simulation.ipynb)
+* [Theory - On Browniam motion and Diffusion cofficient](http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/Theory%2520-%2520On%2520Browniam%2520motion%2520and%2520Diffusion%2520cofficient.ipynb)
 
 #Acknowledgements
 

@@ -144,7 +144,7 @@ class ParticlesSimulation(object):
         self.EID = EID
 
         self.n_samples = int(t_max/t_step)
-        self.sigma = sqrt(2*D*3*t_step)
+        self.sigma_1d = sqrt(2*D*t_step)
 
     def __repr__(self):
         pM = self.concentration(pM=True)
@@ -332,7 +332,8 @@ class ParticlesSimulation(object):
             POS = []
             #pos_w = np.zeros((3, c_size))
             for i in xrange(len(self.particles)):
-                delta_pos = rs.normal(loc=0, scale=self.sigma, size=3*c_size)
+                delta_pos = rs.normal(loc=0, scale=self.sigma_1d,
+                                      size=3*c_size)
                 delta_pos = delta_pos.reshape(3, c_size)
                 pos = np.cumsum(delta_pos, axis=-1, out=delta_pos)
                 pos += par_start_pos[i]
