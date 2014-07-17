@@ -143,7 +143,7 @@ You may be also interested in a few notebooks on the theory of Brownian motion
 simulation (they don't require PyBroMo):
 
 * [Theory - Introduction to Brownian Motion simulation](http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/Theory%2520-%2520Introduction%2520to%2520Brownian%2520Motion%2520simulation.ipynb)
-* [Theory - On Browniam motion and Diffusion cofficient](http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/Theory%2520-%2520On%2520Browniam%2520motion%2520and%2520Diffusion%2520cofficient.ipynb)
+* [Theory - On Browniam motion and Diffusion coefficient](http://nbviewer.ipython.org/urls/raw.github.com/tritemio/PyBroMo/master/notebooks/Theory%2520-%2520On%2520Browniam%2520motion%2520and%2520Diffusion%2520coefficient.ipynb)
 
 #Acknowledgements
 
