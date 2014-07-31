@@ -24,6 +24,8 @@ import loadutils as lu
 from storage import Storage
 from iter_chunks import iter_chunksize, iter_chunk_index
 import brownian_plot as bpl
+import utils.hdf5
+
 
 ## Avogadro constant
 NA = 6.022141e23    # [mol^-1]
