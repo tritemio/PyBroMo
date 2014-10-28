@@ -48,6 +48,9 @@ def print_children(data_file, group='/'):
 
     print '\nLeaf-nodes in %s:' % group
     for node in base._v_leaves.itervalues():
-        print '\t%s %s' % (node.name, node.shape)
+        info = node.shape
+        if len(info) == 0:
+            info = node.read()
+        print '\t%s, %s' % (node.name, info)
         if len(node.title) > 0:
             print '\t    %s' % node.title
