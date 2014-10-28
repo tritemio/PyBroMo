@@ -7,7 +7,7 @@ Copyright (C) 2013-2014 Antonino Ingargiola tritemio@gmail.com
 """
 
 import matplotlib.pyplot as plt
-from scroll_gui import ScrollingToolQT
+#from scroll_gui import ScrollingToolQT
 
 
 def plot_tracks(S):
