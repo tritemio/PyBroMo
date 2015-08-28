@@ -1,11 +1,9 @@
-# encoding: utf-8  μ αβγδ εζηθ κλμν ξοπρ ςστυ φχψω
-"""
-PyBroMo - A single molecule diffusion simulator in confocal geometry.
+#
+# PyBroMo - A single molecule diffusion simulator in confocal geometry.
+#
+# Copyright (C) 2013-2015 Antonino Ingargiola tritemio@gmail.com
+#
 
-Copyright (C) 2013-2014 Antonino Ingargiola tritemio@gmail.com
-
-This is the main module of PyBroMo. Import (or run) it to perform a simulation.
-"""
 from __future__ import print_function, absolute_import, division
 from builtins import range, zip
 

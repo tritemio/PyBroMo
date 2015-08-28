@@ -1,4 +1,9 @@
-# -*- coding: utf-8 -*-
+#
+# PyBroMo - A single molecule diffusion simulator in confocal geometry.
+#
+# Copyright (C) 2013-2015 Antonino Ingargiola tritemio@gmail.com
+#
+
 """
 PyBroMo - A single molecule diffusion simulator in confocal geometry.
 

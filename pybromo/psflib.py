@@ -1,3 +1,9 @@
+#
+# PyBroMo - A single molecule diffusion simulator in confocal geometry.
+#
+# Copyright (C) 2013-2015 Antonino Ingargiola tritemio@gmail.com
+#
+
 """
 This module provides classes to compute PSF functions either starting from
 an analytical formula (i.e. Gaussian) or by interpolation of a precomputed PSF.

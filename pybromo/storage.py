@@ -1,4 +1,9 @@
-# -*- coding: utf-8 -*-
+#
+# PyBroMo - A single molecule diffusion simulator in confocal geometry.
+#
+# Copyright (C) 2013-2015 Antonino Ingargiola tritemio@gmail.com
+#
+
 """
 This module implements functions to store simulation results to a file.
 The module uses the HDF5 file format through the PyTables library.
