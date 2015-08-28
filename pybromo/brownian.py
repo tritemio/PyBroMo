@@ -30,7 +30,7 @@ def get_seed(seed, ID=0, EID=0):
     return seed + EID + 100 * ID
 
 def hash_(x):
-    hashlib.sha1(repr(x)).hexdigest()
+    return hashlib.sha1(repr(x).encode()).hexdigest()
 
 class Box:
     """The simulation box"""

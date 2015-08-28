@@ -15,4 +15,6 @@ from . import loadutils as lu
 from . import brownian_plot as bpl
 from .utils import hdf5
 
-from . import brownian
+from . import brownian as core
+from .brownian import (Box, Particle,
+                       gen_particles, ParticlesSimulation)

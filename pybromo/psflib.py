@@ -14,7 +14,7 @@ Copyright (C) 2013-2014 Antonino Ingargiola tritemio@gmail.com
 from __future__ import print_function, absolute_import, division
 from builtins import range, zip
 
-
+import pkg_resources
 import os
 from scipy.io import loadmat
 import scipy.interpolate as SI
@@ -48,7 +48,7 @@ class GaussianPSF:
 
         ## Method2: evaluation using numexpr
         def arg(s):
-            "((%s-%sc)**2)/(2*s%s**2)" % (s, s, s)
+            return "((%s-%sc)**2)/(2*s%s**2)" % (s, s, s)
         return NE.evaluate("exp(-(%s + %s + %s))" %
                            (arg("x"), arg("y"), arg("z")))
 
@@ -59,11 +59,14 @@ class GaussianPSF:
 
 class NumericPSF:
     def __init__(self, fname='xz_realistic_z50_150_160_580nm_n1335_HR2',
-                 dir_='psf_data/', x_step=0.5 / 8, z_step=0.5 / 8,
+                 dir_=None, x_step=0.5 / 8, z_step=0.5 / 8,
                  psf_pytables=None):
         """Create a PSF object for interpolation from numeric data.
 
         `dir_+fname`: should be a valid path
+
+        If `dir_` is None use the "system" folder where the PSF shipped with
+        pybromo are placed.
         """
         if psf_pytables is not None:
             self.psflab_psf_raw = psf_pytables[:]
@@ -71,9 +74,12 @@ class NumericPSF:
                 setattr(self, name, psf_pytables.get_attr(name))
         else:
             self.fname = fname
+            if dir_ is None:
+                dir_ = pkg_resources.resource_filename('pybromo', 'psf_data')
+
             self.dir_ = dir_
             self.x_step, self.z_step = x_step, z_step
-            self.psflab_psf_raw = load_PSFLab_file(dir_ + fname)
+            self.psflab_psf_raw = load_PSFLab_file('/'.join([dir_, fname]))
 
         xi, zi, hdata, zm = convert_PSFLab_xz(self.psflab_psf_raw,
                                               x_step=x_step, z_step=z_step,
