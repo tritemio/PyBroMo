@@ -157,7 +157,7 @@ class ParticlesSimulation(object):
         hash_numeric = 'D=%s, t_step=%s, t_max=%s, np=%s' % \
             (self.D, self.t_step, self.t_max, self.np)
         hash_list = [hash_numeric, repr(self.box), self.psf.hash()]
-        return hashlib.md5(repr(hash_list)).hexdigest()
+        return hashlib.md5(repr(hash_list).encode()).hexdigest()
 
     def compact_name_core(self, hashdigits=6, t_max=False):
         """Compact representation of simulation params (no ID, EID and t_max)

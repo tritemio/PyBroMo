@@ -12,7 +12,7 @@ File part of PyBroMo: a single molecule diffusion simulator.
 Copyright (C) 2013-2014 Antonino Ingargiola tritemio@gmail.com
 """
 from __future__ import print_function, absolute_import, division
-from builtins import range, zip
+from builtins import range, zip, dict
 
 import tables
 import numpy as np
@@ -76,7 +76,7 @@ class Storage(object):
         `attr_params` (dict)
             A dict whole items are stored as attributes in '/parameters'
         """
-        for name, value in nparams.iteritems():
+        for name, value in nparams.items():
             val = value[0] if value[0] is not None else 'none'
             self.data_file.create_array('/parameters', name, obj=val,
                                         title=value[1])

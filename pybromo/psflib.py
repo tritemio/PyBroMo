@@ -12,7 +12,7 @@ File part of PyBroMo: a single molecule diffusion simulator.
 Copyright (C) 2013-2014 Antonino Ingargiola tritemio@gmail.com
 """
 from __future__ import print_function, absolute_import, division
-from builtins import range, zip
+from builtins import range, zip, dict
 
 import pkg_resources
 import os
@@ -122,13 +122,13 @@ class NumericPSF:
     def hash(self):
         """Return an hash string computed on the PSF data."""
         hash_list = []
-        for k, v in self.__dict__.iteritems():
+        for k, v in self.__dict__.items():
             if not callable(v):
                 if isinstance(v, np.ndarray):
                     hash_list.append(v.tostring())
                 else:
                     hash_list.append(str(v))
-        return hashlib.md5(repr(hash_list)).hexdigest()
+        return hashlib.md5(repr(hash_list).encode()).hexdigest()
 
 
 def load_PSFLab_file(fname):
