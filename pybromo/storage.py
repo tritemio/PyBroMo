@@ -11,6 +11,8 @@ The module uses the HDF5 file format through the PyTables library.
 File part of PyBroMo: a single molecule diffusion simulator.
 Copyright (C) 2013-2014 Antonino Ingargiola tritemio@gmail.com
 """
+from __future__ import print_function, absolute_import, division
+from builtins import range, zip
 
 import tables
 import numpy as np
@@ -137,12 +139,12 @@ class Storage(object):
         """
         group = self.data_file.root.trajectories
         if name in group:
-            print "%s already exists ..." % name,
+            print("%s already exists ..." % name, end='')
             if overwrite:
                 self.data_file.remove_node(group, name)
-                print " deleted."
+                print(" deleted.")
             else:
-                print " old returned."
+                print(" old returned.")
                 return group.get_node(name)
 
         nparams = self.get_sim_nparams()
@@ -230,15 +232,15 @@ class Storage(object):
         num_t_steps = nparams['t_max'] / nparams['t_step']
         dt = np.dtype([('counts', 'u1')])
         timetrace_p = []
-        for particle in xrange(num_particles):
+        for particle in range(num_particles):
             name = 'timetrace_p' + str(particle)
             if name in group:
-                print "%s already exists ..." % name,
+                print("%s already exists ..." % name, end='')
                 if overwrite:
                     self.data_file.remove_node(group, name)
-                    print " deleted."
+                    print(" deleted.")
                 else:
-                    print " using the old one."
+                    print(" using the old one.")
                     timetrace_p.append(group.get_node(name))
                     continue
             title_ = ('Binned timetrace of emitted ph (bin = t_step)'
@@ -265,7 +267,7 @@ if __name__ == '__main__':
 #    em_array = add_em_array(hf)
 #
 #    #%%timeit -n1 -r1
-#    for i in xrange(0, int(n_rows/chunksize)):
+#    for i in range(0, int(n_rows/chunksize)):
 #        em_tot_array.append(np.random.rand(chunksize))
 #    em_tot_array.flush()
 #

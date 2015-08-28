@@ -10,6 +10,8 @@ This module defines functions to plot simulation results.
 File part of PyBroMo: a single molecule diffusion simulator.
 Copyright (C) 2013-2014 Antonino Ingargiola tritemio@gmail.com
 """
+from __future__ import print_function, absolute_import, division
+from builtins import range, zip
 
 import matplotlib.pyplot as plt
 #from scroll_gui import ScrollingToolQT

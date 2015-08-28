@@ -15,13 +15,8 @@ import numpy.random as NR
 import numpy as np
 from numpy import array, sqrt
 
-from path_def import *
-from psflib import GaussianPSF, NumericPSF
-import loadutils as lu
-from storage import Storage
-from iter_chunks import iter_chunksize, iter_chunk_index
-import brownian_plot as bpl
-import utils.hdf5
+from .storage import Storage
+from .iter_chunks import iter_chunksize, iter_chunk_index
 
 
 ## Avogadro constant
@@ -649,41 +644,3 @@ def parallel_gen_timestamps(dview, max_em_rate, bg_rate):
     times_all, times_par_all = merge_ph_times(Times, Times_par,
                                               time_block=t_max)
     return times_all, times_par_all, t_tot, sim_name
-
-
-if __name__ == '__main__':
-    # Simulation time step
-    #t_step = 0.5e-6     # seconds
-
-    # Diffusion coefficient
-    #Du = 12.0           # um^2 / s
-    #D = Du*(1e-6)**2
-
-    # Time duration of the simulation
-    #t_max = 0.3        # seconds
-    #n_samples = int(t_max/t_step)
-
-    # PSF definition
-    #ss = 0.2*1e-6      # lateral dimension (sigma)
-    #psf = GaussianPSF(xc=0, yc=0, zc=0, sx=ss, sy=ss, sz=3*ss)
-    #psf = NumericPSF()
-
-    # Box definition
-    #box = Box(x1=-4.e-6, x2=4.e-6, y1=-4.e-6, y2=4.e-6, z1=-6e-6, z2=6e-6)
-
-    # Particles definition
-    #p1 = Particle(x0=-3e-6)
-    #p2 = Particle(x0=3e-6)
-    #p3 = Particle(y0=-3e-6)
-    #p4 = Particle(y0=3e-6)
-    #P = [p1,p2,p3,p4]
-    #P = gen_particles(15, box)
-
-    # Brownian motion and emission simulation
-    #S = ParticlesSimulation(D=D, t_step=t_step, t_max=t_max,
-    #                        particles=P, box=box, psf=psf)
-    #S.sim_brownian_motion(delete_pos=False)
-
-    #plot_tracks(S)
-    #plot_emission(S)
-    pass

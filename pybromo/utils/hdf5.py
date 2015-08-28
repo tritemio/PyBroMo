@@ -23,13 +23,13 @@ def print_attrs(data_file, node_name='/', which='user', compress=False):
             Default False.
     """
     node = data_file.get_node(node_name)
-    print 'List of attributes for:\n  %s\n' % node
+    print ('List of attributes for:\n  %s\n' % node)
     for attr in node._v_attrs._f_list():
-        print '\t%s' % attr
+        print ('\t%s' % attr)
         attr_content = repr(node._v_attrs[attr])
         if compress:
             attr_content = attr_content.split('\n')[0]
-        print "\t    %s" % attr_content
+        print ("\t    %s" % attr_content)
 
 def print_children(data_file, group='/'):
     """Print all the sub-groups in `group` and leaf-nodes children of `group`.
@@ -40,17 +40,17 @@ def print_children(data_file, group='/'):
             Default: '/', the root node.
     """
     base = data_file.get_node(group)
-    print 'Groups in:\n  %s\n' % base
+    print ('Groups in:\n  %s\n' % base)
 
     for node in base._f_walk_groups():
         if node is not base:
-            print '    %s' % node
+            print ('    %s' % node)
 
-    print '\nLeaf-nodes in %s:' % group
+    print ('\nLeaf-nodes in %s:' % group)
     for node in base._v_leaves.itervalues():
         info = node.shape
         if len(info) == 0:
             info = node.read()
-        print '\t%s, %s' % (node.name, info)
+        print ('\t%s, %s' % (node.name, info))
         if len(node.title) > 0:
-            print '\t    %s' % node.title
+            print ('\t    %s' % node.title)

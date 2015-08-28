@@ -11,6 +11,8 @@ Copyright (C) 2013-2014 Antonino Ingargiola tritemio@gmail.com
 
 This module implements iterator functions to loop over arrays in chunks.
 """
+from __future__ import print_function, absolute_import, division
+from builtins import range, zip
 
 import numpy as np
 
@@ -20,7 +22,7 @@ def iter_chunksize(num_samples, chunksize):
     At each iteration returns `chunksize` except for the last iteration.
     """
     last_chunksize = np.mod(num_samples, chunksize)
-    for i in xrange(int(num_samples / chunksize)):
+    for i in range(int(num_samples / chunksize)):
         yield chunksize
     if last_chunksize > 0:
         yield last_chunksize
