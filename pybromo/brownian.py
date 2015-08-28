@@ -6,10 +6,11 @@ Copyright (C) 2013-2014 Antonino Ingargiola tritemio@gmail.com
 
 This is the main module of PyBroMo. Import (or run) it to perform a simulation.
 """
+from __future__ import print_function, absolute_import, division
+from builtins import range, zip
 
 import os
 from glob import glob
-from itertools import izip
 import hashlib
 
 import numpy.random as NR
@@ -207,11 +208,11 @@ class ParticlesSimulation(object):
         float_size = 4
         MB = 1024 * 1024
         size_ = (self.n_samples * float_size)
-        print "  Number of particles:", self.np
-        print "  Number of time steps:", self.n_samples
-        print "  Emission array - 1 particle (float32): %.1f MB" % (size_ / MB)
-        print "  Emission array (float32): %.1f MB" % (size_ * self.np / MB)
-        print "  Position array (float32): %.1f MB " % (3 * size_ * self.np / MB)
+        print("  Number of particles:", self.np)
+        print("  Number of time steps:", self.n_samples)
+        print("  Emission array - 1 particle (float32): %.1f MB" % (size_ / MB))
+        print("  Emission array (float32): %.1f MB" % (size_ * self.np / MB))
+        print("  Position array (float32): %.1f MB " % (3 * size_ * self.np / MB))
 
     def concentration(self, pM=False):
         """Return the concentration (in Moles) of the particles in the box.
@@ -333,7 +334,7 @@ class ParticlesSimulation(object):
 
             POS = []
             # pos_w = np.zeros((3, c_size))
-            for i in xrange(len(self.particles)):
+            for i in range(len(self.particles)):
                 delta_pos = rs.normal(loc=0, scale=self.sigma_1d,
                                       size=3 * c_size)
                 delta_pos = delta_pos.reshape(3, c_size)
@@ -392,7 +393,7 @@ class ParticlesSimulation(object):
         if len(ts) == 0:
             raise ValueError("No array matching '%s'" % name)
         elif len(ts) > 1:
-            print 'WARNING: multiple matches, only the first is returned.'
+            print('WARNING: multiple matches, only the first is returned.')
         return ts[0], ts_par[0]
 
     def timestamp_names(self):
@@ -466,7 +467,7 @@ class ParticlesSimulation(object):
                 # Compute timestamps for paricle p_i for all bins with counts
                 times_c_i = [(index[counts_chunk_p_i >= 1] + i_start) * scale]
                 # Additional timestamps for bins with counts > 1
-                for frac, v in izip(fractions, range(2, max_counts + 1)):
+                for frac, v in zip(fractions, range(2, max_counts + 1)):
                     times_c_i.append(
                         (index[counts_chunk_p_i >= v] + i_start) * scale + frac)
 
@@ -510,7 +511,7 @@ def sim_timetrace_bg(emission, max_rate, bg_rate, t_step, rs=None):
     counts = np.zeros((em.shape[0] + 1, em.shape[1]), dtype='u1')
     # In-place computation
     # NOTE: the caller will see the modification
-    em *= (max_rate*t_step)
+    em *= (max_rate * t_step)
     # Use automatic type conversion int64 -> uint8
     counts[:-1] = rs.poisson(lam=em)
     counts[-1] = rs.poisson(lam=bg_rate * t_step, size=em.shape[1])
