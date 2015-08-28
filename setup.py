@@ -3,14 +3,6 @@ import versioneer
 
 project_name = 'pybromo'
 
-## Configure versioneer
-versioneer.VCS = 'git'
-versioneer.versionfile_source = project_name + '/_version.py'
-versioneer.versionfile_build = project_name + '/_version.py'
-versioneer.tag_prefix = ''  # tags are like 1.2.0
-versioneer.parentdir_prefix = project_name + '-'
-
-
 ## Metadata
 long_description = """
 PyBroMo
