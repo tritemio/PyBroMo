@@ -35,7 +35,7 @@ class Storage(object):
         else:
             # Create a new empty file
             self.data_file = tables.open_file(fname, mode = "w",
-                               title = "Brownian motion simulation")
+                                   title = "Brownian motion simulation")
             # Create the groups
             self.data_file.create_group('/', 'trajectories',
                                    'Simulated trajectories')
@@ -126,8 +126,8 @@ class Storage(object):
         return times_array, particles_array
 
     def add_trajectory(self, name, overwrite=False, shape=(0,), title='',
-                  chunksize=2**19, comp_filter=default_compression,
-                  atom=tables.Float64Atom(), params=dict()):
+                       chunksize=2**19, comp_filter=default_compression,
+                       atom=tables.Float64Atom(), params=dict()):
         """Add an trajectory array in '/trajectories'.
         """
         group = self.data_file.root.trajectories
@@ -141,16 +141,16 @@ class Storage(object):
                 return group.get_node(name)
 
         nparams = self.get_sim_nparams()
-        num_t_steps = nparams['t_max']/nparams['t_step']
+        num_t_steps = nparams['t_max'] / nparams['t_step']
 
         if chunksize is None:
             chunkshape = None
         elif len(shape) == 1:
             chunkshape = (chunksize,)
         elif len(shape) == 2:
-            chunkshape = (shape[0], chunksize/shape[0],)
+            chunkshape = (shape[0], chunksize / shape[0],)
         elif len(shape) == 3:
-            chunkshape = (shape[0], shape[1], chunksize/(shape[0]*shape[1]),)
+            chunkshape = (shape[0], shape[1], chunksize / (shape[0] * shape[1]))
 
         store_array = self.data_file.create_earray(
             group, name, atom=atom,
@@ -184,10 +184,11 @@ class Storage(object):
         num_particles = nparams['np']
 
         return self.add_trajectory('emission', shape=(num_particles, 0),
-                overwrite=overwrite, chunksize=chunksize,
-                comp_filter=comp_filter, atom=tables.Float32Atom(),
-                title = 'Emission trace of each particle',
-                params=params)
+                                   overwrite=overwrite, chunksize=chunksize,
+                                   comp_filter=comp_filter,
+                                   atom=tables.Float32Atom(),
+                                   title='Emission trace of each particle',
+                                   params=params)
 
     def add_position(self, chunksize=2**19, comp_filter=default_compression,
                      overwrite=False, params=dict()):
@@ -197,10 +198,11 @@ class Storage(object):
         num_particles = nparams['np']
 
         return self.add_trajectory('position', shape=(num_particles, 3, 0),
-                overwrite=overwrite, chunksize=chunksize,
-                comp_filter=comp_filter, atom=tables.Float32Atom(),
-                title = '3-D position trace of each particle',
-                params=params)
+                                   overwrite=overwrite, chunksize=chunksize,
+                                   comp_filter=comp_filter,
+                                   atom=tables.Float32Atom(),
+                                   title='3-D position trace of each particle',
+                                   params=params)
 
     def add_timetrace_tot(self, chunksize=2**19,
                           comp_filter=default_compression,
@@ -208,9 +210,10 @@ class Storage(object):
         """Add the `timetrace_tot` array in '/trajectories'.
         """
         return self.add_trajectory('timetrace_tot', overwrite=overwrite,
-                chunksize=chunksize, comp_filter=comp_filter,
-                atom=tables.UInt8Atom(),
-                title = 'Timetrace of emitted photons with bin = t_step')
+                                   chunksize=chunksize, comp_filter=comp_filter,
+                                   atom=tables.UInt8Atom(),
+                                   title=('Timetrace of emitted photons with '
+                                          'bin = t_step'))
 
     def add_timetrace(self, chunksize=2**19, comp_filter=default_compression,
                       overwrite=False):
@@ -219,7 +222,7 @@ class Storage(object):
         group = self.data_file.root.trajectories
         nparams = self.get_sim_nparams()
         num_particles = nparams['np']
-        num_t_steps = nparams['t_max']/nparams['t_step']
+        num_t_steps = nparams['t_max'] / nparams['t_step']
         dt = np.dtype([('counts', 'u1')])
         timetrace_p = []
         for particle in xrange(num_particles):
@@ -233,25 +236,25 @@ class Storage(object):
                     print " using the old one."
                     timetrace_p.append(group.get_node(name))
                     continue
-            timetrace_p.append(
-                    self.data_file.create_table(
-                        group, name, description=dt, chunkshape=chunksize,
-                        expectedrows=num_t_steps,
-                        title='Binned timetrace of emitted ph (bin = t_step)'
-                            ' - particle_%d' % particle)
-                    )
+            title_ = ('Binned timetrace of emitted ph (bin = t_step)'
+                      ' - particle_%d' % particle)
+            tt = self.data_file.create_table(group, name, description=dt,
+                                             chunkshape=chunksize,
+                                             expectedrows=num_t_steps,
+                                             title=title_)
+            timetrace_p.append(tt)
         return timetrace_p
 
 
 if __name__ == '__main__':
-    store = Storage('h2.h5', {'D': (1.2e-11, 'Diffusion coefficient (m^2/s)'),
-                           'EID': (0, 'IPython engine ID (int)'),
-                           'ID': (0, 'Simulation ID (int)'),
-                           'np': (40, 'Number of simulated particles'),
-                           'pico_mol': (86.4864063019005,
-                                        'Particles concentration (pM)'),
-                           't_max': (0.1, 'Simulation total time (s)'),
-                           't_step': (5e-07, 'Simulation time-step (s)')})
+    d = {'D': (1.2e-11, 'Diffusion coefficient (m^2/s)'),
+         'EID': (0, 'IPython engine ID (int)'),
+         'ID': (0, 'Simulation ID (int)'),
+         'np': (40, 'Number of simulated particles'),
+         'pico_mol': (86.4864063019005, 'Particles concentration (pM)'),
+         't_max': (0.1, 'Simulation total time (s)'),
+         't_step': (5e-07, 'Simulation time-step (s)')}
+    store = Storage('h2.h5', d)
 
 #    em_tot_array = add_em_tot_array(hf)
 #    em_array = add_em_array(hf)
