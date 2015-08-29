@@ -63,7 +63,7 @@ class Particle:
 
 
 class Particles(list):
-    """Custom list containing many Particle()"""
+    """A list containing many Particle() and a few attributes."""
     def __init__(self, init_list=None, init_random_state=None):
         super(Particles, self).__init__(init_list)
         self.init_random_state = init_random_state
@@ -179,8 +179,9 @@ class ParticlesSimulation(object):
         s += "_ID%d-%d" % (self.ID, self.EID)
         return s
 
-    def get_nparams(self):
-        """Return a dict containing all the simulation numeric-parameters.
+    @property
+    def numeric_params(self):
+        """A dict containing all the simulation numeric-parameters.
 
         The values are 2-element tuples: first element is the value and
         second element is a string describing the parameter (metadata).
@@ -250,7 +251,7 @@ class ParticlesSimulation(object):
             overwrite (bool): if True, overwrite the file if already exists.
                 All the previoulsy stored data in that file will be lost.
         """
-        nparams = self.get_nparams()
+        nparams = self.numeric_params
         self.chunksize = chunksize
         nparams.update(chunksize=(chunksize, 'Chunksize for arrays'))
         self.store_fname = prefix + self.compact_name() + '.hdf5'

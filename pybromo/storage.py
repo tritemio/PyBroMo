@@ -34,10 +34,10 @@ class Storage(object):
         '/trajectories'
             containing simulation trajectories (positions, emission traces)
 
-        If `oldfile=False` (default) `fname` will be overwritten (if exists).
+        If `overwrite=True` (default) `fname` will be overwritten (if exists).
         """
         if not overwrite:
-            # Create a new empty file
+            # Open file for appending
             self.data_file = tables.open_file(fname, mode = "a")
         else:
             # Create a new empty file
@@ -83,7 +83,8 @@ class Storage(object):
         for name, value in attr_params.items():
                 self.data_file.set_node_attr('/parameters', name, value)
 
-    def get_sim_nparams(self):
+    @property
+    def numeric_params(self):
         """Return a dict containing all (key, values) stored in '/parameters'
         """
         nparams = dict()
@@ -91,7 +92,8 @@ class Storage(object):
             nparams[p.name] = p.read()
         return nparams
 
-    def get_sim_nparams_meta(self):
+    @property
+    def numeric_params_meta(self):
         """Return a dict with all parameters and metadata in '/parameters'.
 
         This returns the same dict format as returned by get_params() method
@@ -147,7 +149,7 @@ class Storage(object):
                 print(" old returned.")
                 return group.get_node(name)
 
-        nparams = self.get_sim_nparams()
+        nparams = self.numeric_params
         num_t_steps = nparams['t_max'] / nparams['t_step']
 
         if chunksize is None:
@@ -187,7 +189,7 @@ class Storage(object):
                      overwrite=False, params=dict()):
         """Add the `emission` array in '/trajectories'.
         """
-        nparams = self.get_sim_nparams()
+        nparams = self.numeric_params
         num_particles = nparams['np']
 
         return self.add_trajectory('emission', shape=(num_particles, 0),
@@ -201,7 +203,7 @@ class Storage(object):
                      overwrite=False, params=dict()):
         """Add the `position` array in '/trajectories'.
         """
-        nparams = self.get_sim_nparams()
+        nparams = self.numeric_params
         num_particles = nparams['np']
 
         return self.add_trajectory('position', shape=(num_particles, 3, 0),
@@ -227,7 +229,7 @@ class Storage(object):
         """Add the `timetrace` array in '/trajectories'.
         """
         group = self.data_file.root.trajectories
-        nparams = self.get_sim_nparams()
+        nparams = self.numeric_params
         num_particles = nparams['np']
         num_t_steps = nparams['t_max'] / nparams['t_step']
         dt = np.dtype([('counts', 'u1')])
