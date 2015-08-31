@@ -122,12 +122,12 @@ class NumericPSF:
     def hash(self):
         """Return an hash string computed on the PSF data."""
         hash_list = []
-        for k, v in self.__dict__.items():
-            if not callable(v):
-                if isinstance(v, np.ndarray):
-                    hash_list.append(v.tostring())
+        for key, value in sorted(self.__dict__.items()):
+            if not callable(value):
+                if isinstance(value, np.ndarray):
+                    hash_list.append(value.tostring())
                 else:
-                    hash_list.append(str(v))
+                    hash_list.append(str(value))
         return hashlib.md5(repr(hash_list).encode()).hexdigest()
 
 

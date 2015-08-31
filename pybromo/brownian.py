@@ -155,7 +155,7 @@ class ParticlesSimulation(object):
         This can be used to generate unique file names for simulations
         that have the same parameters and just different ID or EID.
         """
-        hash_numeric = 'D=%s, t_step=%s, t_max=%s, np=%s' % \
+        hash_numeric = 'D=%.3e, t_step=%.3e, t_max=%.2f, np=%d' % \
             (self.D, self.t_step, self.t_max, self.np)
         hash_list = [hash_numeric, repr(self.box), self.psf.hash()]
         return hashlib.md5(repr(hash_list).encode()).hexdigest()
