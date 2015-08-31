@@ -104,6 +104,25 @@ class Storage(object):
             nparams[p.name] = (p.read(), p.title)
         return nparams
 
+    @staticmethod
+    def calc_chunkshape(chunksize, shape, kind='bytes'):
+        assert kind in ['times', 'bytes']
+        if chunksize is None:
+            return None
+
+        if kind == 'bytes':
+            divisor = 1
+            for dimsize in shape[:-1]:
+                divisor *= dimsize
+
+        if len(shape) == 1:
+            chunkshape = (chunksize,)
+        elif len(shape) == 2:
+            chunkshape = (shape[0], chunksize / divisor)
+        elif len(shape) == 3:
+            chunkshape = (shape[0], shape[1], chunksize / divisor)
+        return chunkshape
+
     def add_timestamps(self, name, clk_p, max_rate, bg_rate,
                        num_particles, bg_particle,
                        overwrite=False, chunksize=2**16,
@@ -111,7 +130,7 @@ class Storage(object):
         if name in self.data_file.root.timestamps:
             if overwrite:
                 self.data_file.remove_node('/timestamps', name=name)
-                self.data_file.remove_node('/timestamps', name=name+'_par')
+                self.data_file.remove_node('/timestamps', name=name + '_par')
             else:
                 raise ValueError('Timestam array already exist (%s)' % name)
 
@@ -125,7 +144,7 @@ class Storage(object):
         times_array.set_attr('max_rate', max_rate)
         times_array.set_attr('bg_rate', bg_rate)
         particles_array = self.data_file.create_earray(
-            '/timestamps', name+'_par', atom=tables.UInt8Atom(),
+            '/timestamps', name + '_par', atom=tables.UInt8Atom(),
             shape = (0,),
             chunkshape = (chunksize,),
             filters = comp_filter,
@@ -136,7 +155,8 @@ class Storage(object):
 
     def add_trajectory(self, name, overwrite=False, shape=(0,), title='',
                        chunksize=2**19, comp_filter=default_compression,
-                       atom=tables.Float64Atom(), params=dict()):
+                       atom=tables.Float64Atom(), params=dict(),
+                       chunkslice='bytes'):
         """Add an trajectory array in '/trajectories'.
         """
         group = self.data_file.root.trajectories
@@ -152,15 +172,7 @@ class Storage(object):
         nparams = self.numeric_params
         num_t_steps = nparams['t_max'] / nparams['t_step']
 
-        if chunksize is None:
-            chunkshape = None
-        elif len(shape) == 1:
-            chunkshape = (chunksize,)
-        elif len(shape) == 2:
-            chunkshape = (shape[0], chunksize / shape[0],)
-        elif len(shape) == 3:
-            chunkshape = (shape[0], shape[1], chunksize / (shape[0] * shape[1]))
-
+        chunkshape = self.calc_chunkshape(chunksize, shape, kind=chunkslice)
         store_array = self.data_file.create_earray(
             group, name, atom=atom,
             shape = shape,
@@ -174,9 +186,9 @@ class Storage(object):
             store_array.set_attr(key, value)
         return store_array
 
-    def add_emission_tot(self, chunksize=2**19,
-                         comp_filter=default_compression,
-                         overwrite=False, params=dict()):
+    def add_emission_tot(self, chunksize=2**19, comp_filter=default_compression,
+                         overwrite=False, params=dict(),
+                         chunkslice='bytes'):
         """Add the `emission_tot` array in '/trajectories'.
         """
         return self.add_trajectory('emission_tot', overwrite=overwrite,
@@ -186,7 +198,7 @@ class Storage(object):
                 params=params)
 
     def add_emission(self, chunksize=2**19, comp_filter=default_compression,
-                     overwrite=False, params=dict()):
+                     overwrite=False, params=dict(), chunkslice='bytes'):
         """Add the `emission` array in '/trajectories'.
         """
         nparams = self.numeric_params
@@ -200,7 +212,7 @@ class Storage(object):
                                    params=params)
 
     def add_position(self, chunksize=2**19, comp_filter=default_compression,
-                     overwrite=False, params=dict()):
+                     overwrite=False, params=dict(), chunkslice='bytes'):
         """Add the `position` array in '/trajectories'.
         """
         nparams = self.numeric_params

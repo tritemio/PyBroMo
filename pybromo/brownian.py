@@ -17,6 +17,7 @@ from numpy import array, sqrt
 
 from .storage import Storage
 from .iter_chunks import iter_chunksize, iter_chunk_index
+from .psflib import NumericPSF
 
 
 ## Avogadro constant
@@ -236,8 +237,8 @@ class ParticlesSimulation(object):
         group = self.store.data_file.get_node(group)
         return group._v_attrs[attr_name]
 
-    def open_store(self, prefix='pybromo_', chunksize=2**19, overwrite=True,
-                   comp_filter=None):
+    def open_store(self, prefix='pybromo_', chunksize=2**19, chunkslice='bytes',
+                   comp_filter=None, overwrite=True):
         """Open and setup the on-disk storage file (pytables HDF5 file).
 
         Arguments:
@@ -245,6 +246,10 @@ class ParticlesSimulation(object):
             chunksize (int): chunk size used for the on-disk arrays saved
                 during the brownian motion simulation. Does not apply to
                 the timestamps arrays (see :method:``).
+            chunkslice ('times' or 'bytes'): if 'bytes' (default) the chunksize
+                is taken as the size in bytes of the chunks. Else, if 'times'
+                chunksize is the size of the last dimension. In this latter
+                case 2-D or 3-D arrays have bigger chunks than 1-D arrays.
             comp_filter (tables.Filter or None): compression filter to use
                 for the on-disk arrays saved during the brownian motion
                 simulation.
@@ -268,7 +273,7 @@ class ParticlesSimulation(object):
         self.traj_group = self.store.data_file.root.trajectories
         self.ts_group = self.store.data_file.root.timestamps
 
-        kwargs = dict(chunksize=self.chunksize,)
+        kwargs = dict(chunksize=self.chunksize, chunkslice=chunkslice)
         if comp_filter is not None:
             kwargs.update(comp_filter=comp_filter)
         self.emission_tot = self.store.add_emission_tot(**kwargs)
@@ -530,7 +535,7 @@ def load_simulation(fname):
     if len(fnames) > 1:
         raise ValueError('Glob matched more than 1 file!')
     store = Storage(fnames[0], overwrite=False)
-    nparams = store.get_sim_nparams()
+    nparams = store.numeric_params
 
     psf_pytables = store.data_file.get_node('/psf/default_psf')
     psf = NumericPSF(psf_pytables=psf_pytables)
