@@ -280,9 +280,9 @@ class ParticlesSimulation(object):
         self.emission = self.store.add_emission(**kwargs)
         self.position = self.store.add_position(**kwargs)
 
-    def sim_brownian_motion(self, save_pos=False, total_emission=True,
-                            rs=None, seed=1, wrap_func=wrap_periodic,
-                            verbose=True, chunksize=2**19, chunkslice='bytes'):
+    def simulate_diffusion(self, save_pos=False, total_emission=True,
+                           rs=None, seed=1, wrap_func=wrap_periodic,
+                           verbose=True, chunksize=2**19, chunkslice='bytes'):
         """Simulate Brownian motion trajectories and emission rates.
 
         This method performs the Brownian motion simulation using the current
@@ -402,9 +402,9 @@ class ParticlesSimulation(object):
             names.append(node.name)
         return names
 
-    def sim_timestamps_em_store(self, max_rate=1, bg_rate=0, rs=None, seed=1,
-                                chunksize=2**16, comp_filter=None,
-                                overwrite=False):
+    def simulate_timestamps(self, max_rate=1, bg_rate=0, rs=None, seed=1,
+                            chunksize=2**16, comp_filter=None,
+                            overwrite=False):
         """Compute timestamps and particles arrays and store results to disk.
 
         The results are accessible as pytables arrays in `.timestamps` and
