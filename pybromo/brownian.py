@@ -133,13 +133,17 @@ class ParticlesSimulation(object):
         self.psf = psf
 
         self.D = D
-        self.np = len(particles)
+
         self.t_step = t_step
         self.t_max = t_max
         self.ID = ID
         self.EID = EID
 
         self.n_samples = int(t_max / t_step)
+
+    @property
+    def num_particles(self):
+        return len(particles)
 
     @property
     def sigma_1d(self):
@@ -149,7 +153,7 @@ class ParticlesSimulation(object):
         pM = self.concentration(pM=True)
         s = repr(self.box)
         s += "\nD %.2g, #Particles %d, %.1f pM, t_step %.1fus, t_max %.1fs" %\
-            (self.D, self.np, pM, self.t_step * 1e6, self.t_max)
+            (self.D, self.num_particles, pM, self.t_step * 1e6, self.t_max)
         s += " ID_EID %d %d" % (self.ID, self.EID)
         return s
 
@@ -159,7 +163,7 @@ class ParticlesSimulation(object):
         that have the same parameters and just different ID or EID.
         """
         hash_numeric = 'D=%.3e, t_step=%.3e, t_max=%.2f, np=%d' % \
-            (self.D, self.t_step, self.t_max, self.np)
+            (self.D, self.t_step, self.t_max, self.num_particles)
         hash_list = [hash_numeric, repr(self.box), self.psf.hash()]
         return hashlib.md5(repr(hash_list).encode()).hexdigest()
 
@@ -168,7 +172,7 @@ class ParticlesSimulation(object):
         """
         Moles = self.concentration()
         name = "D%.2g_%dP_%dpM_step%.1fus" % (
-            self.D, self.np, Moles * 1e12, self.t_step * 1e6)
+            self.D, self.num_particles, Moles * 1e12, self.t_step * 1e6)
         if hashdigits > 0:
             name = self.hash()[:hashdigits] + '_' + name
         if t_max:
@@ -192,7 +196,7 @@ class ParticlesSimulation(object):
         """
         nparams = dict(
             D = (self.D, 'Diffusion coefficient (m^2/s)'),
-            np = (self.np, 'Number of simulated particles'),
+            np = (self.num_particles, 'Number of simulated particles'),
             t_step = (self.t_step, 'Simulation time-step (s)'),
             t_max = (self.t_max, 'Simulation total time (s)'),
             ID = (self.ID, 'Simulation ID (int)'),
@@ -205,17 +209,19 @@ class ParticlesSimulation(object):
         """Print on-disk array sizes required for current set of parameters."""
         float_size = 4
         MB = 1024 * 1024
-        size_ = (self.n_samples * float_size)
-        print("  Number of particles:", self.np)
+        size_ = self.n_samples * float_size
+        em_size = size_ * self.num_particles / MB
+        pos_size = 3 * size_ * self.num_particles / MB
+        print("  Number of particles:", self.num_particles)
         print("  Number of time steps:", self.n_samples)
         print("  Emission array - 1 particle (float32): %.1f MB" % (size_ / MB))
-        print("  Emission array (float32): %.1f MB" % (size_ * self.np / MB))
-        print("  Position array (float32): %.1f MB " % (3 * size_ * self.np / MB))
+        print("  Emission array (float32): %.1f MB" % em_size)
+        print("  Position array (float32): %.1f MB " % pos_size)
 
     def concentration(self, pM=False):
         """Return the concentration (in Moles) of the particles in the box.
         """
-        concentr = (self.np / NA) / self.box.volume_L()
+        concentr = (self.num_particles / NA) / self.box.volume_L()
         if pM:
             concentr *= 1e12
         return concentr
@@ -325,7 +331,7 @@ class ParticlesSimulation(object):
         t_chunk_size = self.emission.chunkshape[1]
 
         par_start_pos = [p.r0 for p in self.particles]
-        par_start_pos = np.vstack(par_start_pos).reshape(self.np, 3, 1)
+        par_start_pos = np.vstack(par_start_pos).reshape(self.num_particles, 3, 1)
         for c_size in iter_chunksize(self.n_samples, t_chunk_size):
             if verbose:
                 print('.', end='')
@@ -364,8 +370,8 @@ class ParticlesSimulation(object):
                 par_start_pos[i] = pos[:, -1:]
 
             ## Append em to the permanent storage
-            # if total_emission is just a linear array
-            # otherwise is an hstack of what is saved and em (self.np, c_size)
+            # if total_emission, data is just a linear array
+            # otherwise is a 2-D array (self.num_particles, c_size)
             em_store.append(em)
             if save_pos:
                 self.position.append(np.vstack(POS).astype('float32'))
@@ -447,8 +453,8 @@ class ParticlesSimulation(object):
                 clk_p = self.t_step / scale,
                 max_rate = max_rate,
                 bg_rate = bg_rate,
-                num_particles = self.np,
-                bg_particle = self.np,
+                num_particles = self.num_particles,
+                bg_particle = self.num_particles,
                 overwrite = overwrite,
                 chunksize = chunksize,
                 comp_filter = comp_filter)
