@@ -282,7 +282,7 @@ class ParticlesSimulation(object):
 
     def sim_brownian_motion(self, save_pos=False, total_emission=True,
                             rs=None, seed=1, wrap_func=wrap_periodic,
-                            verbose=True):
+                            verbose=True, chunksize=2**19, chunkslice='bytes'):
         """Simulate Brownian motion trajectories and emission rates.
 
         This method performs the Brownian motion simulation using the current
@@ -309,7 +309,7 @@ class ParticlesSimulation(object):
             rs = np.random.RandomState(seed=seed)
 
         if 'store' not in self.__dict__:
-            self.open_store()
+            self.open_store(chunksize=chunksize, chunkslice=chunkslice)
         # Save current random state for reproducibility
         self._save_group_attr('/trajectories', 'init_random_state',
                               rs.get_state())
