@@ -11,7 +11,6 @@ import os
 from glob import glob
 import hashlib
 
-import numpy.random as NR
 import numpy as np
 from numpy import array, sqrt
 
@@ -506,7 +505,7 @@ def sim_timetrace(emission, max_rate, t_step):
     """Draw random emitted photons from Poisson(emission_rates).
     """
     emission_rates = emission * max_rate * t_step
-    return NR.poisson(lam=emission_rates).astype(np.uint8)
+    return np.random.poisson(lam=emission_rates).astype(np.uint8)
 
 def sim_timetrace_bg(emission, max_rate, bg_rate, t_step, rs=None):
     """Draw random emitted photons from Poisson(emission_rates).
