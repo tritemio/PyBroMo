@@ -140,7 +140,10 @@ class ParticlesSimulation(object):
         self.EID = EID
 
         self.n_samples = int(t_max / t_step)
-        self.sigma_1d = sqrt(2 * D * t_step)
+
+    @property
+    def sigma_1d(self):
+        return np.sqrt(2 * self.D * self.t_step)
 
     def __repr__(self):
         pM = self.concentration(pM=True)
