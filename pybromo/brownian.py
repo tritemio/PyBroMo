@@ -142,7 +142,7 @@ class ParticlesSimulation(object):
 
     @property
     def num_particles(self):
-        return len(particles)
+        return len(self.particles)
 
     @property
     def sigma_1d(self):
