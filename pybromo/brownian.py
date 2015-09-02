@@ -40,13 +40,15 @@ class Box:
         self.z1, self.z2 = z1, z2
         self.b = array([[x1, x2], [y1, y2], [z1, z2]])
 
+    @property
     def volume(self):
         """Box volume in m^3."""
         return (self.x2 - self.x1) * (self.y2 - self.y1) * (self.z2 - self.z1)
 
+    @property
     def volume_L(self):
         """Box volume in liters."""
-        return self.volume() * 1e3
+        return self.volume * 1e3
 
     def __repr__(self):
         return u"Box: X %.1fum, Y %.1fum, Z %.1fum" % (
@@ -220,7 +222,7 @@ class ParticlesSimulation(object):
     def concentration(self, pM=False):
         """Return the concentration (in Moles) of the particles in the box.
         """
-        concentr = (self.num_particles / NA) / self.box.volume_L()
+        concentr = (self.num_particles / NA) / self.box.volume_L
         if pM:
             concentr *= 1e12
         return concentr
