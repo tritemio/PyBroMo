@@ -288,6 +288,67 @@ class ParticlesSimulation(object):
         self.emission = self.store.add_emission(**kwargs)
         self.position = self.store.add_position(**kwargs)
 
+    def _sim_trajectories(self, time_size, start_pos, rs,
+                          total_emission=False, save_pos=False,
+                          wrap_func=wrap_periodic):
+        """Simulate (in-memory) `time_size` steps of trajectories.
+
+        Simulate Brownian motion diffusion and emission of all the particles.
+        Uses the attrbutes: num_particles, sigma_1d, box, psf.
+
+        Arguments:
+            time_size (int): number of time steps to be simulated.
+            start_pos (array): shape (num_particles, 3), particles start
+                positions. This array is modified to store the end position
+                after this method is called.
+            rs (RandomState): a `numpy.random.RandomState` object used
+                to generate the random numbers.
+            total_emission (bool): if True, store only the total emission array
+                containing the sum of emission of all the particles.
+            save_pos (bool): if True, save the particles 3D trajectories
+            wrap_func (function): the function used to apply the boundary
+                condition (use :func:`wrap_periodic` or :func:`wrap_mirror`).
+
+        Returns:
+            POS (list): list of 3D trajectories arrays (3 x time_size)
+            em (array): array of emission (total or per-particle)
+        """
+        num_particles = self.num_particles
+        if total_emission:
+            em = np.zeros((time_size), dtype=np.float32)
+        else:
+            em = np.zeros((num_particles, time_size), dtype=np.float32)
+
+        POS = []
+        # pos_w = np.zeros((3, c_size))
+        for i in range(num_particles):
+            delta_pos = rs.normal(loc=0, scale=self.sigma_1d,
+                                  size=3 * time_size)
+            delta_pos = delta_pos.reshape(3, time_size)
+            pos = np.cumsum(delta_pos, axis=-1, out=delta_pos)
+            pos += start_pos[i]
+
+            # Coordinates wrapping using periodic boundary conditions
+            for coord in (0, 1, 2):
+                pos[coord] = wrap_func(pos[coord], *self.box.b[coord])
+
+            # Sample the PSF along i-th trajectory then square to account
+            # for emission and detection PSF.
+            Ro = sqrt(pos[0]**2 + pos[1]**2)  # radial pos. on x-y plane
+            Z = pos[2]
+            current_em = self.psf.eval_xz(Ro, Z)**2
+            if total_emission:
+                # Add the current particle emission to the total emission
+                em += current_em.astype(np.float32)
+            else:
+                # Store the individual emission of current particle
+                em[i] = current_em.astype(np.float32)
+            if save_pos:
+                POS.append(pos.reshape(1, 3, time_size))
+            # Save last position as next starting position
+            start_pos[i] = pos[:, -1:]
+        return POS, em
+
     def simulate_diffusion(self, save_pos=False, total_emission=True,
                            rs=None, seed=1, wrap_func=wrap_periodic,
                            verbose=True, chunksize=2**19, chunkslice='bytes'):
@@ -330,43 +391,16 @@ class ParticlesSimulation(object):
         t_chunk_size = self.emission.chunkshape[1]
 
         par_start_pos = [p.r0 for p in self.particles]
-        par_start_pos = np.vstack(par_start_pos).reshape(self.num_particles, 3, 1)
-        for c_size in iter_chunksize(self.n_samples, t_chunk_size):
+        par_start_pos = (np.vstack(par_start_pos)
+                         .reshape(self.num_particles, 3, 1))
+        for time_size in iter_chunksize(self.n_samples, t_chunk_size):
             if verbose:
                 print('.', end='')
-            if total_emission:
-                em = np.zeros((c_size), dtype=np.float32)
-            else:
-                em = np.zeros((self.np, c_size), dtype=np.float32)
 
-            POS = []
-            # pos_w = np.zeros((3, c_size))
-            for i in range(len(self.particles)):
-                delta_pos = rs.normal(loc=0, scale=self.sigma_1d,
-                                      size=3 * c_size)
-                delta_pos = delta_pos.reshape(3, c_size)
-                pos = np.cumsum(delta_pos, axis=-1, out=delta_pos)
-                pos += par_start_pos[i]
-
-                # Coordinates wrapping using periodic boundary conditions
-                for coord in (0, 1, 2):
-                    pos[coord] = wrap_func(pos[coord], *self.box.b[coord])
-
-                # Sample the PSF along i-th trajectory then square to account
-                # for emission and detection PSF.
-                Ro = sqrt(pos[0]**2 + pos[1]**2)  # radial pos. on x-y plane
-                Z = pos[2]
-                current_em = self.psf.eval_xz(Ro, Z)**2
-                if total_emission:
-                    # Add the current particle emission to the total emission
-                    em += current_em.astype(np.float32)
-                else:
-                    # Store the individual emission of current particle
-                    em[i] = current_em.astype(np.float32)
-                if save_pos:
-                    POS.append(pos.reshape(1, 3, c_size))
-                # Save last position as next starting position
-                par_start_pos[i] = pos[:, -1:]
+            POS, em = self._sim_trajectories(time_size, par_start_pos, rs,
+                                             total_emission=total_emission,
+                                             save_pos=save_pos,
+                                             wrap_func=wrap_func)
 
             ## Append em to the permanent storage
             # if total_emission, data is just a linear array
