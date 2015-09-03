@@ -57,9 +57,10 @@ class Box:
             (self.z2 - self.z1) * 1e6)
 
 
-class Particle:
-    """Class to describe a single particle"""
-    def __init__(self, x0=0, y0=0, z0=0):
+class Particle(object):
+    """Class to describe a single particle."""
+    def __init__(self, D, x0=0, y0=0, z0=0):
+        self.D = D   # diffusion coefficient in SI units, m^2/s
         self.x0, self.y0, self.z0 = x0, y0, z0
         self.r0 = array([x0, y0, z0])
 
@@ -112,12 +113,13 @@ def wrap_mirror(a, a1, a2):
 class ParticlesSimulation(object):
     """Class that performs the Brownian motion simulation of N particles.
     """
-    def __init__(self, D, t_step, t_max, particles, box, psf, EID=0, ID=0):
+    def __init__(self, t_step, t_max, particles, box, psf, EID=0, ID=0):
         """Initialize the simulation parameters.
 
         Arguments:
             D (float): diffusion coefficient (m/s^2)
-            t_step (float): time step (seconds)
+            t_step (float): simulation time step (seconds)
+            t_max (float): simulation time duration (seconds)
             particles (Particles object): initial particle position
             box (Box object): the simulation boundaries
             psf (GaussianPSF or NumericPSF object): the PSF used in simulation
@@ -132,15 +134,16 @@ class ParticlesSimulation(object):
         self.particles = particles
         self.box = box
         self.psf = psf
-
-        self.D = D
-
         self.t_step = t_step
         self.t_max = t_max
         self.ID = ID
         self.EID = EID
-
         self.n_samples = int(t_max / t_step)
+
+    @property
+    def diffusion_coeff(self):
+        return np.array([np.sqrt(2 * par.D * self.t_step)
+                         for par in self.particles])
 
     @property
     def num_particles(self):
@@ -148,13 +151,14 @@ class ParticlesSimulation(object):
 
     @property
     def sigma_1d(self):
-        return np.sqrt(2 * self.D * self.t_step)
+        return [np.sqrt(2 * par.D * self.t_step) for par in self.particles]
 
     def __repr__(self):
         pM = self.concentration(pM=True)
         s = repr(self.box)
         s += "\nD %.2g, #Particles %d, %.1f pM, t_step %.1fus, t_max %.1fs" %\
-            (self.D, self.num_particles, pM, self.t_step * 1e6, self.t_max)
+             (self.diffusion_coeff.mean(), self.num_particles, pM,
+              self.t_step * 1e6, self.t_max)
         s += " ID_EID %d %d" % (self.ID, self.EID)
         return s
 
@@ -164,7 +168,8 @@ class ParticlesSimulation(object):
         that have the same parameters and just different ID or EID.
         """
         hash_numeric = 'D=%.3e, t_step=%.3e, t_max=%.2f, np=%d' % \
-            (self.D, self.t_step, self.t_max, self.num_particles)
+            (self.diffusion_coeff.mean(), self.t_step, self.t_max,
+             self.num_particles)
         hash_list = [hash_numeric, repr(self.box), self.psf.hash()]
         return hashlib.md5(repr(hash_list).encode()).hexdigest()
 
@@ -173,7 +178,8 @@ class ParticlesSimulation(object):
         """
         Moles = self.concentration()
         name = "D%.2g_%dP_%dpM_step%.1fus" % (
-            self.D, self.num_particles, Moles * 1e12, self.t_step * 1e6)
+            self.diffusion_coeff.mean(), self.num_particles, Moles * 1e12,
+            self.t_step * 1e6)
         if hashdigits > 0:
             name = self.hash()[:hashdigits] + '_' + name
         if t_max:
@@ -196,7 +202,7 @@ class ParticlesSimulation(object):
         second element is a string describing the parameter (metadata).
         """
         nparams = dict(
-            D = (self.D, 'Diffusion coefficient (m^2/s)'),
+            D = (self.diffusion_coeff.mean(), 'Diffusion coefficient (m^2/s)'),
             np = (self.num_particles, 'Number of simulated particles'),
             t_step = (self.t_step, 'Simulation time-step (s)'),
             t_max = (self.t_max, 'Simulation total time (s)'),
@@ -323,8 +329,8 @@ class ParticlesSimulation(object):
 
         POS = []
         # pos_w = np.zeros((3, c_size))
-        for i in range(num_particles):
-            delta_pos = rs.normal(loc=0, scale=self.sigma_1d,
+        for i, sigma_1d in enumerate(self.sigma_1d):
+            delta_pos = rs.normal(loc=0, scale=sigma_1d,
                                   size=3 * time_size)
             delta_pos = delta_pos.reshape(3, time_size)
             pos = np.cumsum(delta_pos, axis=-1, out=delta_pos)
