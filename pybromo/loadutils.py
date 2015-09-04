@@ -14,8 +14,6 @@ acceptor timestamps.
 
 For an example of all the needed parameters see `pybromo_ts_params_example`.
 
-File part of PyBroMo: a single molecule diffusion simulator.
-Copyright (C) 2013-2014 Antonino Ingargiola tritemio@gmail.com
 """
 
 # This dict defines a univoque set of timestamps

@@ -12,9 +12,9 @@ del get_versions
 from .psflib import GaussianPSF, NumericPSF
 from . import loadutils as lu
 
-from . import brownian_plot as bpl
+from . import plot
 from .utils import hdf5
 
-from . import brownian as core
-from .brownian import (Box, Particle,
-                       gen_particles, ParticlesSimulation)
+from . import diffusion
+from .diffusion import (Box, Particle, gen_particles,
+                        ParticlesSimulation, hash_)

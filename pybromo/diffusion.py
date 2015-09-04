@@ -13,7 +13,6 @@ from __future__ import print_function, absolute_import, division
 from builtins import range, zip
 
 import os
-from glob import glob
 import hashlib
 
 import numpy as np
@@ -21,7 +20,6 @@ from numpy import array, sqrt
 
 from .storage import Storage
 from .iter_chunks import iter_chunksize, iter_chunk_index
-from .psflib import NumericPSF
 
 
 ## Avogadro constant

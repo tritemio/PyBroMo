@@ -14,7 +14,7 @@ from glob import glob
 
 from .storage import Storage
 from .psflib import NumericPSF
-from .brownian import ParticlesSimulation
+from .diffusion import ParticlesSimulation
 
 
 def load_simulation(fname):

@@ -10,9 +10,8 @@ the added complexity of using pytables.
 """
 
 import numpy as np
-from itertools import izip
-from brownian import (iter_chunk_index, sim_timetrace, sim_timetrace_bg,
-                      sim_timetrace_bg2,)
+from ..diffusion import (iter_chunk_index, sim_timetrace, sim_timetrace_bg,
+                         sim_timetrace_bg2,)
 
 
 def sim_timestamps_em_list(S, max_rate=1, bg_rate=0, rs=None, seed=None):
@@ -46,7 +45,7 @@ def sim_timestamps_em_list(S, max_rate=1, bg_rate=0, rs=None, seed=None):
             # Compute timestamps for paricle p_i for all bins with counts
             times_c_i = [(index[counts_chunk_p_i >= 1] + i_start)*scale]
             # Additional timestamps for bins with counts > 1
-            for frac, v in izip(fractions, range(2, max_counts + 1)):
+            for frac, v in zip(fractions, range(2, max_counts + 1)):
                 times_c_i.append(
                     (index[counts_chunk_p_i >= v] + i_start)*scale + frac
                     )
@@ -103,7 +102,7 @@ def sim_timestamps_em_list1(S, max_rate=1, bg_rate=0, rs=None, seed=None):
             # Compute timestamps for paricle p_i for all bins with counts
             times_c_i = [(index[counts_chunk_p_i >= 1] + i_start)*scale]
             # Additional timestamps for bins with counts > 1
-            for frac, v in izip(fractions, range(2, max_counts + 1)):
+            for frac, v in zip(fractions, range(2, max_counts + 1)):
                 times_c_i.append(
                     (index[counts_chunk_p_i >= v] + i_start)*scale + frac
                     )
@@ -154,7 +153,7 @@ def sim_timestamps_em_list2(S, max_rate=1, bg_rate=0, rs=None, seed=None):
             # Compute timestamps for paricle p_i for all bins with counts
             times_c_i = [(index[counts_chunk_p_i >= 1] + i_start)*scale]
             # Additional timestamps for bins with counts > 1
-            for frac, v in izip(fractions, range(2, max_counts + 1)):
+            for frac, v in zip(fractions, range(2, max_counts + 1)):
                 times_c_i.append(
                     (index[counts_chunk_p_i >= v] + i_start)*scale + frac
                     )
