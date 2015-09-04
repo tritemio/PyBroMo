@@ -104,7 +104,7 @@ class Particles(object):
     def __len__(self):
         return len(self._plist)
 
-    def __item__(self, i):
+    def __getitem__(self, i):
         return self._plist[i]
 
     def __add__(self, other_particles):
