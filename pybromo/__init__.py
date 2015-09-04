@@ -16,5 +16,4 @@ from . import plot
 from .utils import hdf5
 
 from . import diffusion
-from .diffusion import (Box, Particle, gen_particles,
-                        ParticlesSimulation, hash_)
+from .diffusion import (Box, Particles, ParticlesSimulation, hash_)

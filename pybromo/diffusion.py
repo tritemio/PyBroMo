@@ -68,32 +68,66 @@ class Particle(object):
         self.r0 = array([x0, y0, z0])
 
 
-class Particles(list):
-    """A list containing many Particle() and a few attributes."""
-    def __init__(self, init_list=None, init_random_state=None):
-        super(Particles, self).__init__(init_list)
+class Particles(object):
+    """A list of Particle() objects and a few attributes."""
+
+    @staticmethod
+    def generate(N, box, D, rs=None, seed=1):
+        """Generate `N` Particle() objects with random position in `box`.
+
+        Arguments:
+            N (int): number of particles to be generated
+            box (Box object): the simulation box
+            rs (RandomState object): random state object used as random number
+                generator. If None, use a random state initialized from seed.
+            seed (uint): when `rs` is None, `seed` is used to initialize the
+                random state, otherwise is ignored.
+        """
+        if rs is None:
+            rs = np.random.RandomState(seed=seed)
+        init_random_state = rs.get_state()
+        X0 = rs.rand(N) * (box.x2 - box.x1) + box.x1
+        Y0 = rs.rand(N) * (box.y2 - box.y1) + box.y1
+        Z0 = rs.rand(N) * (box.z2 - box.z1) + box.z1
+        part = [Particle(D=D, x0=x0, y0=y0, z0=z0)
+                for x0, y0, z0 in zip(X0, Y0, Z0)]
+        return Particles(part, init_random_state=init_random_state)
+
+    def __init__(self, list_of_particles, init_random_state=None):
+        self._plist = list_of_particles
         self.init_random_state = init_random_state
         self.rs_hash = hash_(init_random_state)[:3]
 
-def gen_particles(N, box, rs=None, seed=1):
-    """Generate `N` Particle() objects with random position in `box`.
+    def __iter__(self):
+        return iter(self._plist)
 
-    Arguments:
-        N (int): number of particles to be generated
-        box (Box object): the simulation box
-        rs (RandomState object): random state object used as random number
-            generator. If None, use a random state initialized from seed.
-        seed (uint): when `rs` is None, `seed` is used to initialize the
-            random state, otherwise is ignored.
-    """
-    if rs is None:
-        rs = np.random.RandomState(seed=seed)
-    init_random_state = rs.get_state()
-    X0 = rs.rand(N) * (box.x2 - box.x1) + box.x1
-    Y0 = rs.rand(N) * (box.y2 - box.y1) + box.y1
-    Z0 = rs.rand(N) * (box.z2 - box.z1) + box.z1
-    part = [Particle(x0=x0, y0=y0, z0=z0) for x0, y0, z0 in zip(X0, Y0, Z0)]
-    return Particles(part, init_random_state=init_random_state)
+    def __len__(self):
+        return len(self._plist)
+
+    def __item__(self, i):
+        return self._plist[i]
+
+    def __add__(self, other_particles):
+        return Particles(self._plist + other_particles._plist,
+                         init_random_state=self.init_random_state)
+
+    @property
+    def diffusion_coeff(self):
+        return np.array([par.D for par in self])
+
+    @property
+    def diffusion_coeff_counts(self):
+        diff_coeff, counts = np.unique(self.diffusion_coeff, return_counts=True)
+        return [(D, n) for D, n in zip(diff_coeff, counts)]
+
+    def short_repr(self):
+        s = ["P%d_D%.2g" % (n, D) for D, n in self.diffusion_coeff_counts]
+        return "_".join(s)
+
+    def __repr__(self):
+        s = ["#Particles: %d D: %.2g" % (n, D)
+             for D, n in self.diffusion_coeff_counts]
+        return ", ".join(s)
 
 
 def wrap_periodic(a, a1, a2):
@@ -145,8 +179,7 @@ class ParticlesSimulation(object):
 
     @property
     def diffusion_coeff(self):
-        return np.array([np.sqrt(2 * par.D * self.t_step)
-                         for par in self.particles])
+        return np.array([par.D for par in self.particles])
 
     @property
     def num_particles(self):
@@ -159,9 +192,8 @@ class ParticlesSimulation(object):
     def __repr__(self):
         pM = self.concentration(pM=True)
         s = repr(self.box)
-        s += "\nD %.2g, #Particles %d, %.1f pM, t_step %.1fus, t_max %.1fs" %\
-             (self.diffusion_coeff.mean(), self.num_particles, pM,
-              self.t_step * 1e6, self.t_max)
+        s += "\n%s, %.1f pM, t_step %.1fus, t_max %.1fs" %\
+             (self.particles, pM, self.t_step * 1e6, self.t_max)
         s += " ID_EID %d %d" % (self.ID, self.EID)
         return s
 
@@ -170,19 +202,18 @@ class ParticlesSimulation(object):
         This can be used to generate unique file names for simulations
         that have the same parameters and just different ID or EID.
         """
-        hash_numeric = 'D=%.3e, t_step=%.3e, t_max=%.2f, np=%d' % \
-            (self.diffusion_coeff.mean(), self.t_step, self.t_max,
-             self.num_particles)
-        hash_list = [hash_numeric, repr(self.box), self.psf.hash()]
+        hash_numeric = 't_step=%.3e, t_max=%.2f, np=%d, conc=%.2e' % \
+            (self.t_step, self.t_max, self.num_particles, self.concentration())
+        hash_list = [hash_numeric, self.particles.short_repr(), repr(self.box),
+                     self.psf.hash()]
         return hashlib.md5(repr(hash_list).encode()).hexdigest()
 
     def compact_name_core(self, hashdigits=6, t_max=False):
         """Compact representation of simulation params (no ID, EID and t_max)
         """
         Moles = self.concentration()
-        name = "D%.2g_%dP_%dpM_step%.1fus" % (
-            self.diffusion_coeff.mean(), self.num_particles, Moles * 1e12,
-            self.t_step * 1e6)
+        name = "%s_%dpM_step%.1fus" % (
+            self.particles.short_repr(), Moles * 1e12, self.t_step * 1e6)
         if hashdigits > 0:
             name = self.hash()[:hashdigits] + '_' + name
         if t_max:
