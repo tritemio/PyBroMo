@@ -76,7 +76,7 @@ class Particles(object):
     """A list of Particle() objects and a few attributes."""
 
     @staticmethod
-    def generate(num_particles, D, box, rs):
+    def _generate(num_particles, D, box, rs):
         """Generate a list of `Particle` objects."""
         X0 = rs.rand(num_particles) * (box.x2 - box.x1) + box.x1
         Y0 = rs.rand(num_particles) * (box.y2 - box.y1) + box.y1
@@ -98,18 +98,20 @@ class Particles(object):
         """
         if rs is None:
             rs = np.random.RandomState(seed=seed)
+        self.rs = rs
         self.init_random_state = rs.get_state()
-        self._plist = self.generate(num_particles, D, box, rs)
-        self.final_random_state = rs.get_state()
+        self.box = box
+        self._plist = self._generate(num_particles, D, box, rs)
         self.rs_hash = hash_(self.init_random_state)[:3]
 
     def add(self, num_particles, D):
         """Add particles with diffusion coeff `D` at random positions.
         """
-        rs = np.random.RandomState()
-        rs.set_state(self.final_random_state)
-        self._plist += self.generate(num_particles, D, box=self.box, rs=rs)
-        self.final_random_state = rs.get_state()
+        self._plist += self._generate(num_particles, D, box=self.box,
+                                      rs=self.rs)
+
+    def to_list(self):
+        return self._plist.copy()
 
     def __iter__(self):
         return iter(self._plist)
