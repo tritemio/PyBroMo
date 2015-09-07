@@ -14,6 +14,7 @@ from builtins import range, zip
 
 import os
 import hashlib
+import itertools
 
 import numpy as np
 from numpy import array, sqrt
@@ -65,38 +66,50 @@ class Particle(object):
     def __init__(self, D, x0=0, y0=0, z0=0):
         self.D = D   # diffusion coefficient in SI units, m^2/s
         self.x0, self.y0, self.z0 = x0, y0, z0
-        self.r0 = array([x0, y0, z0])
+        self.r0 = np.array([x0, y0, z0])
+
+    def __eq__(self, other_particle):
+        return (self.r0 == other_particle.r0).all()
 
 
 class Particles(object):
     """A list of Particle() objects and a few attributes."""
 
     @staticmethod
-    def generate(N, box, D, rs=None, seed=1):
-        """Generate `N` Particle() objects with random position in `box`.
+    def generate(num_particles, D, box, rs):
+        """Generate a list of `Particle` objects."""
+        X0 = rs.rand(num_particles) * (box.x2 - box.x1) + box.x1
+        Y0 = rs.rand(num_particles) * (box.y2 - box.y1) + box.y1
+        Z0 = rs.rand(num_particles) * (box.z2 - box.z1) + box.z1
+        return [Particle(D=D, x0=x0, y0=y0, z0=z0)
+                for x0, y0, z0 in zip(X0, Y0, Z0)]
+
+    def __init__(self, num_particles, D, box, rs=None, seed=1):
+        """A set of `N` Particle() objects with random position in `box`.
 
         Arguments:
-            N (int): number of particles to be generated
+            num_particles (int): number of particles to be generated
+            D (float): diffusion coefficient in S.I. units (m^2/s)
             box (Box object): the simulation box
             rs (RandomState object): random state object used as random number
                 generator. If None, use a random state initialized from seed.
             seed (uint): when `rs` is None, `seed` is used to initialize the
-                random state, otherwise is ignored.
+                random state. `seed` is ignored when `rs` is not None.
         """
         if rs is None:
             rs = np.random.RandomState(seed=seed)
-        init_random_state = rs.get_state()
-        X0 = rs.rand(N) * (box.x2 - box.x1) + box.x1
-        Y0 = rs.rand(N) * (box.y2 - box.y1) + box.y1
-        Z0 = rs.rand(N) * (box.z2 - box.z1) + box.z1
-        part = [Particle(D=D, x0=x0, y0=y0, z0=z0)
-                for x0, y0, z0 in zip(X0, Y0, Z0)]
-        return Particles(part, init_random_state=init_random_state)
+        self.init_random_state = rs.get_state()
+        self._plist = self.generate(num_particles, D, box, rs)
+        self.final_random_state = rs.get_state()
+        self.rs_hash = hash_(self.init_random_state)[:3]
 
-    def __init__(self, list_of_particles, init_random_state=None):
-        self._plist = list_of_particles
-        self.init_random_state = init_random_state
-        self.rs_hash = hash_(init_random_state)[:3]
+    def add(self, num_particles, D):
+        """Add particles with diffusion coeff `D` at random positions.
+        """
+        rs = np.random.RandomState()
+        rs.set_state(self.final_random_state)
+        self._plist += self.generate(num_particles, D, box=self.box, rs=rs)
+        self.final_random_state = rs.get_state()
 
     def __iter__(self):
         return iter(self._plist)
@@ -107,9 +120,11 @@ class Particles(object):
     def __getitem__(self, i):
         return self._plist[i]
 
-    def __add__(self, other_particles):
-        return Particles(self._plist + other_particles._plist,
-                         init_random_state=self.init_random_state)
+    def __eq__(self, other_particles):
+        if len(self) != len(other_particles):
+            return False
+        equal = np.array([p1 == p2 for p1, p2 in zip(self, other_particles)])
+        return equal.all()
 
     @property
     def diffusion_coeff(self):
@@ -117,8 +132,12 @@ class Particles(object):
 
     @property
     def diffusion_coeff_counts(self):
-        diff_coeff, counts = np.unique(self.diffusion_coeff, return_counts=True)
-        return [(D, n) for D, n in zip(diff_coeff, counts)]
+        """List of tuples of (diffusion coefficient, counts) pairs.
+
+        The order of the diffusion coefficients is as in self.diffusion_coeff.
+        """
+        return [(key, len(list(group)))
+                for key, group in itertools.groupby(self.diffusion_coeff)]
 
     def short_repr(self):
         s = ["P%d_D%.2g" % (n, D) for D, n in self.diffusion_coeff_counts]

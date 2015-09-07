@@ -18,3 +18,5 @@ from .utils import hdf5
 from . import diffusion
 from .diffusion import (Box, Particles, ParticlesSimulation, hash_)
 from . import manage
+from .tests import test_diffusion
+print('OK')
