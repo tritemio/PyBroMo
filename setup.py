@@ -35,7 +35,7 @@ setup(name = project_name,
                    'Programming Language :: Python :: 3.4',
                    'Topic :: Scientific/Engineering',
                    ],
-      packages = ['pybromo', 'pybromo.tests'],
+      packages = ['pybromo', 'pybromo.utils', 'pybromo.tests'],
       package_data = {'pybromo': ['psf_data/*']},
       keywords = ('single-molecule FRET smFRET biophysics confocal '
                   'freely-diffusing brownian-motion simulator'),
