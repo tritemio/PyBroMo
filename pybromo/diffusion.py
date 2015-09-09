@@ -512,9 +512,48 @@ class ParticlesSimulation(object):
             names.append(node.name)
         return names
 
+    def _sim_timestamps(self, max_rate, bg_rate, emission, i_start, rs,
+                        scale=10, max_counts=4):
+        """Simulate timestamps from emission trajectories.
+
+        Uses attributes `n_samples`, ``
+        """
+        fractions = [5, 2, 8, 4, 6, 1, 9, 3, 7, 0, 5, 2, 8, 4, 6, 1, 9, 3, 7, 0]
+
+        counts_chunk = sim_timetrace_bg(emission, max_rate, bg_rate,
+                                        self.t_step, rs=rs)
+        index = np.arange(0, counts_chunk.shape[1])
+
+        # Loop for each particle to compute timestamps
+        times_chunk_p = []      # <-- Try preallocating array
+        par_index_chunk_p = []  # <-- Try preallocating array
+        for p_i, counts_chunk_p_i in enumerate(counts_chunk.copy()):
+            # Compute timestamps for paricle p_i for all bins with counts
+            times_c_i = [(index[counts_chunk_p_i >= 1] + i_start) * scale]
+            # Additional timestamps for bins with counts > 1
+            for frac, v in zip(fractions, range(2, max_counts + 1)):
+                times_c_i.append(
+                    (index[counts_chunk_p_i >= v] + i_start) * scale + frac)
+
+            # Stack the arrays from different "counts"
+            t = np.hstack(times_c_i)
+            times_chunk_p.append(t)
+            par_index_chunk_p.append(np.full(t.size, p_i, dtype='u1'))
+
+        # Merge the arrays of different particles
+        times_chunk_s = np.hstack(times_chunk_p)  # <-- Try preallocating
+        par_index_chunk_s = np.hstack(par_index_chunk_p)  # <-- this too
+
+        # Sort timestamps inside the merged chunk
+        index_sort = times_chunk_s.argsort(kind='mergesort')
+        times_chunk_s = times_chunk_s[index_sort]
+        par_index_chunk_s = par_index_chunk_s[index_sort]
+
+        return times_chunk_s, par_index_chunk_s
+
     def simulate_timestamps(self, max_rate=1, bg_rate=0, rs=None, seed=1,
                             chunksize=2**16, comp_filter=None,
-                            overwrite=False):
+                            overwrite=False, scale=10):
         """Compute timestamps and particles arrays and store results to disk.
 
         The results are accessible as pytables arrays in `.timestamps` and
@@ -544,10 +583,6 @@ class ParticlesSimulation(object):
             else:
                 print("INFO: Random state initialized from seed (%d)." % seed)
 
-        fractions = [5, 2, 8, 4, 9, 1, 7, 3, 6, 9, 0, 5, 2, 8, 4, 9]
-        scale = 10
-        max_counts = 4
-
         name = self._get_ts_name(max_rate, bg_rate, rs.get_state())
         self.timestamps, self.tparticles = self.store.add_timestamps(
                 name = name,
@@ -564,35 +599,9 @@ class ParticlesSimulation(object):
         # Load emission in chunks, and save only the final timestamps
         for i_start, i_end in iter_chunk_index(self.n_samples,
                                                self.emission.chunkshape[1]):
-            counts_chunk = sim_timetrace_bg(
-                self.emission[:, i_start:i_end], max_rate, bg_rate,
-                self.t_step, rs=rs)
-            index = np.arange(0, counts_chunk.shape[1])
-
-            # Loop for each particle to compute timestamps
-            times_chunk_p = []      # <-- Try preallocating array
-            par_index_chunk_p = []  # <-- Try preallocating array
-            for p_i, counts_chunk_p_i in enumerate(counts_chunk.copy()):
-                # Compute timestamps for paricle p_i for all bins with counts
-                times_c_i = [(index[counts_chunk_p_i >= 1] + i_start) * scale]
-                # Additional timestamps for bins with counts > 1
-                for frac, v in zip(fractions, range(2, max_counts + 1)):
-                    times_c_i.append(
-                        (index[counts_chunk_p_i >= v] + i_start) * scale + frac)
-
-                # Stack the arrays from different "counts"
-                t = np.hstack(times_c_i)
-                times_chunk_p.append(t)
-                par_index_chunk_p.append(np.full(t.size, p_i, dtype='u1'))
-
-            # Merge the arrays of different particles
-            times_chunk_s = np.hstack(times_chunk_p)  # <-- Try preallocating
-            par_index_chunk_s = np.hstack(par_index_chunk_p)  # <-- this too
-
-            # Sort timestamps inside the merged chunk
-            index_sort = times_chunk_s.argsort(kind='mergesort')
-            times_chunk_s = times_chunk_s[index_sort]
-            par_index_chunk_s = par_index_chunk_s[index_sort]
+            em_chunk = self.emission[:, i_start:i_end]
+            times_chunk_s, par_index_chunk_s = self._sim_timestamps(
+                max_rate, bg_rate, em_chunk, i_start, rs=rs, scale=scale)
 
             # Save (ordered) timestamps and corrensponding particles
             self.timestamps.append(times_chunk_s)
