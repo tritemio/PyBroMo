@@ -17,22 +17,19 @@ from .psflib import NumericPSF
 from .diffusion import ParticlesSimulation
 
 
-def load_simulation(fname):
+def load_trajectories(fname, path='./'):
     fnames = glob(fname)
     if len(fnames) > 1:
         raise ValueError('Glob matched more than 1 file!')
     store = Storage(fnames[0], overwrite=False)
-    nparams = store.numeric_params
 
     psf_pytables = store.data_file.get_node('/psf/default_psf')
     psf = NumericPSF(psf_pytables=psf_pytables)
     box = store.data_file.get_node_attr('/parameters', 'box')
     P = store.data_file.get_node_attr('/parameters', 'particles')
 
-    names = ['D', 't_step', 't_max', 'EID', 'ID']
-    kwargs = dict()
-    for n in names:
-        kwargs[n] = nparams[n]
+    names = ['t_step', 't_max', 'EID', 'ID']
+    kwargs = {name: store.numeric_params[name] for name in names}
     S = ParticlesSimulation(particles=P, box=box, psf=psf, **kwargs)
 
     # Emulate S.open_store()
