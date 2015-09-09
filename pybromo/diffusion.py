@@ -452,16 +452,17 @@ class ParticlesSimulation(object):
         em_store = self.emission_tot if total_emission else self.emission
 
         if verbose:
-            print('[PID %d] Simulation chunk:' % os.getpid(), end='')
+            print('[PID %d] Diffusion time:' % os.getpid(), end='')
         i_chunk = 0
         t_chunk_size = self.emission.chunkshape[1]
+        chunk_duration = t_chunk_size * self.t_step
 
         par_start_pos = [p.r0 for p in self.particles]
         par_start_pos = (np.vstack(par_start_pos)
                          .reshape(self.num_particles, 3, 1))
         for time_size in iter_chunksize(self.n_samples, t_chunk_size):
             if verbose:
-                print('.', end='')
+                print(' %.1fs' % (chunk_duration * i_chunk), end='')
 
             POS, em = self._sim_trajectories(time_size, par_start_pos, rs,
                                              total_emission=total_emission,
@@ -475,6 +476,7 @@ class ParticlesSimulation(object):
             if save_pos:
                 self.position.append(np.vstack(POS).astype('float32'))
             i_chunk += 1
+            self.store.data_file.flush()
 
         # Save current random state
         self._save_group_attr('/trajectories', 'last_random_state',
