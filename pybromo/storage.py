@@ -14,6 +14,7 @@ Copyright (C) 2013-2014 Antonino Ingargiola tritemio@gmail.com
 from __future__ import print_function, absolute_import, division
 from builtins import range, zip, dict
 
+from pathlib import Path
 import tables
 import numpy as np
 
@@ -23,7 +24,7 @@ default_compression = tables.Filters(complevel=6, complib='blosc')
 
 
 class Storage(object):
-    def __init__(self, fname, nparams=dict(), attr_params=dict(),
+    def __init__(self, fname, path='./', nparams=dict(), attr_params=dict(),
                  overwrite=True):
         """Return a new HDF5 file to store simulation results.
 
@@ -36,12 +37,14 @@ class Storage(object):
 
         If `overwrite=True` (default) `fname` will be overwritten (if exists).
         """
+        assert Path(path).exists()
+        self.filepath = Path(path, fname)
         if not overwrite:
             # Open file for appending
-            self.data_file = tables.open_file(fname, mode = "a")
+            self.data_file = tables.open_file(str(self.filepath), mode = "a")
         else:
             # Create a new empty file
-            self.data_file = tables.open_file(fname, mode = "w",
+            self.data_file = tables.open_file(str(self.filepath), mode = "w",
                                    title = "Brownian motion simulation")
             # Create the groups
             self.data_file.create_group('/', 'trajectories',

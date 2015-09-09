@@ -308,12 +308,13 @@ class ParticlesSimulation(object):
         group = self.store.data_file.get_node(group)
         return group._v_attrs[attr_name]
 
-    def open_store(self, prefix='pybromo_', chunksize=2**19, chunkslice='bytes',
-                   comp_filter=None, overwrite=True):
+    def open_store(self, prefix='pybromo_', path='./', chunksize=2**19,
+                   chunkslice='bytes', comp_filter=None, overwrite=True):
         """Open and setup the on-disk storage file (pytables HDF5 file).
 
         Arguments:
-            prefix (string): file-name prefix for the HDF5 file
+            prefix (string): file-name prefix for the HDF5 file.
+            path (string): a folder where simulation data is saved.
             chunksize (int): chunk size used for the on-disk arrays saved
                 during the brownian motion simulation. Does not apply to
                 the timestamps arrays (see :method:``).
@@ -330,10 +331,10 @@ class ParticlesSimulation(object):
         nparams = self.numeric_params
         self.chunksize = chunksize
         nparams.update(chunksize=(chunksize, 'Chunksize for arrays'))
-        self.store_fname = prefix + self.compact_name() + '.hdf5'
+        store_fname = prefix + self.compact_name() + '.hdf5'
 
         attr_params = dict(particles=self.particles, box=self.box)
-        self.store = Storage(self.store_fname, nparams=nparams,
+        self.store = Storage(store_fname, path=path, nparams=nparams,
                              attr_params=attr_params, overwrite=overwrite)
 
         self.psf_pytables = self.psf.to_hdf5(self.store.data_file, '/psf')
@@ -413,7 +414,7 @@ class ParticlesSimulation(object):
         return POS, em
 
     def simulate_diffusion(self, save_pos=False, total_emission=True,
-                           rs=None, seed=1, wrap_func=wrap_periodic,
+                           rs=None, seed=1, wrap_func=wrap_periodic, path='./',
                            verbose=True, chunksize=2**19, chunkslice='bytes'):
         """Simulate Brownian motion trajectories and emission rates.
 
@@ -435,13 +436,15 @@ class ParticlesSimulation(object):
                 random state, otherwise is ignored.
             wrap_func (function): the function used to apply the boundary
                 condition (use :func:`wrap_periodic` or :func:`wrap_mirror`).
+            path (string): a folder where simulation data is saved.
             verbose (bool): if False, prints no output.
         """
         if rs is None:
             rs = np.random.RandomState(seed=seed)
 
         if 'store' not in self.__dict__:
-            self.open_store(chunksize=chunksize, chunkslice=chunkslice)
+            self.open_store(chunksize=chunksize, chunkslice=chunkslice,
+                            path=path)
         # Save current random state for reproducibility
         self._save_group_attr('/trajectories', 'init_random_state',
                               rs.get_state())
