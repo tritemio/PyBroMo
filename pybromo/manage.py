@@ -12,7 +12,7 @@ from __future__ import print_function, absolute_import, division
 import numpy as np
 from glob import glob
 
-from .storage import Storage
+from .storage import TrajectoryStore
 from .psflib import NumericPSF
 from .diffusion import ParticlesSimulation
 
@@ -21,7 +21,7 @@ def load_trajectories(fname, path='./'):
     fnames = glob(fname)
     if len(fnames) > 1:
         raise ValueError('Glob matched more than 1 file!')
-    store = Storage(fnames[0], overwrite=False)
+    store = TrajectoryStore(fnames[0], overwrite=False)
 
     psf_pytables = store.data_file.get_node('/psf/default_psf')
     psf = NumericPSF(psf_pytables=psf_pytables)
@@ -37,7 +37,6 @@ def load_trajectories(fname, path='./'):
     S.store_fname = fnames[0]
     S.psf_pytables = psf_pytables
     S.traj_group = S.store.data_file.root.trajectories
-    S.ts_group = S.store.data_file.root.timestamps
     S.emission = S.store.data_file.root.trajectories.emission
     S.emission_tot = S.store.data_file.root.trajectories.emission_tot
     S.position = S.store.data_file.root.trajectories.position
