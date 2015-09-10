@@ -298,15 +298,12 @@ class ParticlesSimulation(object):
                 is taken as the size in bytes of the chunks. Else, if 'times'
                 chunksize is the size of the last dimension. In this latter
                 case 2-D or 3-D arrays have bigger chunks than 1-D arrays.
-            comp_filter (tables.Filter or None): compression filter to use
-                for the on-disk arrays saved during the brownian motion
-                simulation.
             overwrite (bool): if True, overwrite the file if already exists.
                 All the previoulsy stored data in that file will be lost.
         """[1:]
 
     def _open_store(self, store, prefix='', path='./', chunksize=2**19,
-                    chunkslice='bytes', comp_filter=None, overwrite=True):
+                    chunkslice='bytes', overwrite=True):
         """Open and setup the on-disk storage file (pytables HDF5 file).
 
         Low level method used to implement different stores.
@@ -321,14 +318,14 @@ class ParticlesSimulation(object):
         self.chunksize = chunksize
         nparams.update(chunksize=(chunksize, 'Chunksize for arrays'))
         store_fname = prefix + self.compact_name() + '.hdf5'
-
         attr_params = dict(particles=self.particles, box=self.box)
-        store = store(store_fname, path=path, nparams=nparams,
-                      attr_params=attr_params, overwrite=overwrite)
+        kwargs = dict(path=path, nparams=nparams, attr_params=attr_params,
+                      overwrite=overwrite)
+        store = store(store_fname, **kwargs)
         return store
 
     def open_store_traj(self, prefix='pybromo_', path='./', chunksize=2**19,
-                        chunkslice='bytes', comp_filter=None, overwrite=True):
+                        chunkslice='bytes', overwrite=True):
         """Open and setup the on-disk storage file (pytables HDF5 file).
 
         Arguments:
@@ -336,26 +333,22 @@ class ParticlesSimulation(object):
         self.store = self._open_store(TrajectoryStore, prefix, path,
                                       chunksize=chunksize,
                                       chunkslice=chunkslice,
-                                      comp_filter=comp_filter,
                                       overwrite=overwrite)
 
         self.psf_pytables = self.psf.to_hdf5(self.store.data_file, '/psf')
         self.store.data_file.create_hard_link('/psf', 'default_psf',
                                               target=self.psf_pytables)
         # Note psf.fname is the psf name in `data_file.root.psf`
-        self._save_group_attr('/trajectories', 'psf_name', self.psf.fname)
         self.traj_group = self.store.data_file.root.trajectories
+        self.traj_group._v_attrs['psf_name'] = self.psf.fname
 
         kwargs = dict(chunksize=self.chunksize, chunkslice=chunkslice)
-        if comp_filter is not None:
-            kwargs.update(comp_filter=comp_filter)
         self.emission_tot = self.store.add_emission_tot(**kwargs)
         self.emission = self.store.add_emission(**kwargs)
         self.position = self.store.add_position(**kwargs)
 
     def open_store_timestamp(self, prefix='ts_', path='./', chunksize=2**19,
-                             chunkslice='bytes', comp_filter=None,
-                             overwrite=True):
+                             chunkslice='bytes', overwrite=True):
         """Open and setup the on-disk storage file (pytables HDF5 file).
 
         Arguments:
@@ -363,7 +356,6 @@ class ParticlesSimulation(object):
         self.store_ts = self._open_store(TimestampStore, prefix, path,
                                          chunksize=chunksize,
                                          chunkslice=chunkslice,
-                                         comp_filter=comp_filter,
                                          overwrite=overwrite)
         self.ts_group = self.store_ts.data_file.root.timestamps
 
@@ -583,6 +575,7 @@ class ParticlesSimulation(object):
             chunksize (int): chunk size used for the on-disk timestamp array
             comp_filter (tables.Filter or None): compression filter to use
                 for the on-disk `timestamps` and `tparticles` arrays.
+                If None use default compression.
             overwrite (bool): if True overwrite an timestamp array with the
                 same name.
             scale (int): `self.t_step` is multiplied by `scale` to obtain the
@@ -603,16 +596,14 @@ class ParticlesSimulation(object):
                 print("INFO: Random state initialized from seed (%d)." % seed)
 
         name = self._get_ts_name(max_rate, bg_rate, rs.get_state())
-        self.timestamps, self.tparticles = self.store_ts.add_timestamps(
-            name = name,
-            clk_p = self.t_step / scale,
-            max_rate = max_rate,
-            bg_rate = bg_rate,
-            num_particles = self.num_particles,
-            bg_particle = self.num_particles,
-            overwrite = overwrite,
-            chunksize = chunksize,
-            comp_filter = comp_filter)
+        kw = dict(name=name, clk_p=self.t_step / scale,
+                  max_rate=max_rate, bg_rate=bg_rate,
+                  num_particles=self.num_particles,
+                  bg_particle=self.num_particles,
+                  overwrite=overwrite, chunksize=chunksize)
+        if comp_filter is not None:
+            kw.update(comp_filter=comp_filter)
+        self.timestamps, self.tparticles = self.store_ts.add_timestamps(**kw)
         self.ts_group._v_attrs['init_random_state'] = rs.get_state()
 
         # Load emission in chunks, and save only the final timestamps

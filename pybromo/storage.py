@@ -16,11 +16,10 @@ from builtins import range, zip, dict
 
 from pathlib import Path
 import tables
-import numpy as np
 
 
 # Compression filter used by default for arrays
-default_compression = tables.Filters(complevel=6, complib='blosc')
+default_compression = tables.Filters(complevel=5, complib='blosc')
 
 
 class BaseStore(object):
@@ -62,7 +61,8 @@ class BaseStore(object):
         else:
             # Create a new empty file
             self.data_file = tables.open_file(str(self.filepath), mode = "w",
-                                              title="PyBroMo simulation file")
+                                              title="PyBroMo simulation file",
+                                              comp_filter=default_compression)
             # Create the groups
             self.data_file.create_group('/', 'parameters',
                                         'Simulation parameters')
@@ -180,11 +180,10 @@ class TrajectoryStore(BaseStore):
                          chunkslice='bytes'):
         """Add the `emission_tot` array in '/trajectories'.
         """
-        return self.add_trajectory('emission_tot', overwrite=overwrite,
-                                   chunksize=chunksize, comp_filter=comp_filter,
-                                   atom=tables.Float32Atom(),
-                                   title='Summed emission trace of all the particles',
-                                   params=params)
+        kwargs = dict(overwrite=overwrite, chunksize=chunksize, params=params,
+                      comp_filter=comp_filter, atom=tables.Float32Atom(),
+                      title='Summed emission trace of all the particles')
+        return self.add_trajectory('emission_tot', **kwargs)
 
     def add_emission(self, chunksize=2**19, comp_filter=default_compression,
                      overwrite=False, params=dict(), chunkslice='bytes'):
