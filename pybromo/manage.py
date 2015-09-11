@@ -34,7 +34,7 @@ def load_trajectories(fname, path='./'):
     kwargs = {name: store.numeric_params[name] for name in names}
     S = ParticlesSimulation(particles=P, box=box, psf=psf, **kwargs)
 
-    # Emulate S.open_store()
+    # Emulate S.open_store_traj()
     S.store = store
     S.store_fname = fnames[0]
     S.psf_pytables = psf_pytables
@@ -43,15 +43,8 @@ def load_trajectories(fname, path='./'):
     S.emission_tot = S.store.data_file.root.trajectories.emission_tot
     S.position = S.store.data_file.root.trajectories.position
     S.chunksize = S.store.data_file.get_node('/parameters', 'chunksize')
-    if '/timestamps' in S.store.data_file:
-        name_list = S.ts_group._v_children.keys()
-        if len(name_list) == 2:
-            for name in name_list:
-                if name.endswith('_par'):
-                    S.tparticles = S.ts_group._f_get_child(name)
-                else:
-                    S.timestamps = S.ts_group._f_get_child(name)
     return S
+
 
 def merge_ts_da(ts_d, ts_par_d, ts_a, ts_par_a):
     """Merge donor and acceptor timestamps and particle arrays.
