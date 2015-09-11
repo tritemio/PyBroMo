@@ -10,7 +10,7 @@ Functions to manage simulations.
 from __future__ import print_function, absolute_import, division
 
 import numpy as np
-from glob import glob
+from pathlib import Path
 
 from .storage import TrajectoryStore
 from .psflib import NumericPSF
@@ -18,10 +18,12 @@ from .diffusion import ParticlesSimulation
 
 
 def load_trajectories(fname, path='./'):
-    fnames = glob(fname)
+    path = Path(path)
+    assert path.exists()
+    fnames = list(path.glob(fname))
     if len(fnames) > 1:
         raise ValueError('Glob matched more than 1 file!')
-    store = TrajectoryStore(fnames[0], overwrite=False)
+    store = TrajectoryStore(str(fnames[0]), overwrite=False)
 
     psf_pytables = store.data_file.get_node('/psf/default_psf')
     psf = NumericPSF(psf_pytables=psf_pytables)
