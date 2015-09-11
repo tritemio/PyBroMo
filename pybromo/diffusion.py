@@ -353,11 +353,11 @@ class ParticlesSimulation(object):
 
         Arguments:
         """ + self.__DOCS_STORE_ARGS___
-        self.store_ts = self._open_store(TimestampStore, prefix, path,
+        self.ts_store = self._open_store(TimestampStore, prefix, path,
                                          chunksize=chunksize,
                                          chunkslice=chunkslice,
                                          overwrite=overwrite)
-        self.ts_group = self.store_ts.data_file.root.timestamps
+        self.ts_group = self.ts_store.data_file.root.timestamps
 
     def _sim_trajectories(self, time_size, start_pos, rs,
                           total_emission=False, save_pos=False,
@@ -582,7 +582,7 @@ class ParticlesSimulation(object):
                 timestamps units in seconds.
             path (string): folder where to save the data.
         """
-        if not hasattr(self, 'store_ts'):
+        if not hasattr(self, 'ts_store'):
             self.open_store_timestamp(chunksize=chunksize, path=path)
         if rs is None:
             rs = np.random.RandomState(seed=seed)
@@ -603,7 +603,7 @@ class ParticlesSimulation(object):
                   overwrite=overwrite, chunksize=chunksize)
         if comp_filter is not None:
             kw.update(comp_filter=comp_filter)
-        self.timestamps, self.tparticles = self.store_ts.add_timestamps(**kw)
+        self.timestamps, self.tparticles = self.ts_store.add_timestamps(**kw)
         self.ts_group._v_attrs['init_random_state'] = rs.get_state()
 
         # Load emission in chunks, and save only the final timestamps
@@ -619,7 +619,7 @@ class ParticlesSimulation(object):
 
         # Save current random state so it can be resumed in the next session
         self.ts_group._v_attrs['last_random_state'] = rs.get_state()
-        self.store_ts.data_file.flush()
+        self.ts_store.data_file.flush()
 
 def sim_timetrace(emission, max_rate, t_step):
     """Draw random emitted photons from Poisson(emission_rates).
