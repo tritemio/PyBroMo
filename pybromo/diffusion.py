@@ -494,21 +494,7 @@ class ParticlesSimulation(object):
         return '%s_rs_%s' % (self._get_ts_name_core(max_rate, bg_rate),
                              hash_(rs_state)[:hashsize])
 
-    def get_timestamp(self, max_rate, bg_rate):
-        ts, ts_par = [], []
-        name = self._get_ts_name_core(max_rate, bg_rate)
-        for node in self.ts_group._f_list_nodes():
-            if name in node.name:
-                if node.name.endswith('_par'):
-                    ts_par.append(node)
-                else:
-                    ts.append(node)
-        if len(ts) == 0:
-            raise ValueError("No array matching '%s'" % name)
-        elif len(ts) > 1:
-            print('WARNING: multiple matches, only the first is returned.')
-        return ts[0], ts_par[0]
-
+    @property
     def timestamp_names(self):
         names = []
         for node in self.ts_group._f_list_nodes():
@@ -516,6 +502,27 @@ class ParticlesSimulation(object):
                 continue
             names.append(node.name)
         return names
+
+    def get_timestamps_name(self, max_rate, bg_rate, hash_=''):
+        """Return name of the matching timestamps array.
+        """
+        name = self._get_ts_name_core(max_rate, bg_rate)
+        name += '_rs_%s' % hash_
+        matches = [n for n in self.timestamp_names if name in n]
+        if len(matches) == 0:
+            raise ValueError('No timestamps matching.')
+        elif len(matches) > 1:
+            raise ValueError('Multiple matches, try specifying `hash_`.')
+        return matches[0]
+
+    def get_timestamps(self, max_rate, bg_rate, hash_=''):
+        """Return matching (timestamps, particles) pytables arrays.
+        """
+        name = self.get_timestamps_name(max_rate, bg_rate, hash_)
+        par_name = name + '_par'
+        timestamps = self.ts_store.data_file.get_node('/timestamps', name)
+        particles = self.ts_store.data_file.get_node('/timestamps', par_name)
+        return timestamps, particles
 
     def _sim_timestamps(self, max_rate, bg_rate, emission, i_start, rs,
                         scale=10, max_counts=4):
@@ -603,7 +610,7 @@ class ParticlesSimulation(object):
                   overwrite=overwrite, chunksize=chunksize)
         if comp_filter is not None:
             kw.update(comp_filter=comp_filter)
-        self.timestamps, self.tparticles = self.ts_store.add_timestamps(**kw)
+        self._timestamps, self._tparticles = self.ts_store.add_timestamps(**kw)
         self.ts_group._v_attrs['init_random_state'] = rs.get_state()
 
         # Load emission in chunks, and save only the final timestamps
@@ -614,8 +621,8 @@ class ParticlesSimulation(object):
                 max_rate, bg_rate, em_chunk, i_start, rs=rs, scale=scale)
 
             # Save (ordered) timestamps and corrensponding particles
-            self.timestamps.append(times_chunk_s)
-            self.tparticles.append(par_index_chunk_s)
+            self._timestamps.append(times_chunk_s)
+            self._tparticles.append(par_index_chunk_s)
 
         # Save current random state so it can be resumed in the next session
         self.ts_group._v_attrs['last_random_state'] = rs.get_state()
