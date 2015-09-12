@@ -23,12 +23,12 @@ def load_trajectories(fname, path='./'):
     fnames = list(path.glob(fname))
     if len(fnames) > 1:
         raise ValueError('Glob matched more than 1 file!')
-    store = TrajectoryStore(str(fnames[0]), overwrite=False)
+    store = TrajectoryStore(str(fnames[0]), mode='r')
 
-    psf_pytables = store.data_file.get_node('/psf/default_psf')
+    psf_pytables = store.h5file.get_node('/psf/default_psf')
     psf = NumericPSF(psf_pytables=psf_pytables)
-    box = store.data_file.get_node_attr('/parameters', 'box')
-    P = store.data_file.get_node_attr('/parameters', 'particles')
+    box = store.h5file.get_node_attr('/parameters', 'box')
+    P = store.h5file.get_node_attr('/parameters', 'particles')
 
     names = ['t_step', 't_max', 'EID', 'ID']
     kwargs = {name: store.numeric_params[name] for name in names}
@@ -38,11 +38,11 @@ def load_trajectories(fname, path='./'):
     S.store = store
     S.store_fname = fnames[0]
     S.psf_pytables = psf_pytables
-    S.traj_group = S.store.data_file.root.trajectories
-    S.emission = S.store.data_file.root.trajectories.emission
-    S.emission_tot = S.store.data_file.root.trajectories.emission_tot
-    S.position = S.store.data_file.root.trajectories.position
-    S.chunksize = S.store.data_file.get_node('/parameters', 'chunksize')
+    S.traj_group = S.store.h5file.root.trajectories
+    S.emission = S.store.h5file.root.trajectories.emission
+    S.emission_tot = S.store.h5file.root.trajectories.emission_tot
+    S.position = S.store.h5file.root.trajectories.position
+    S.chunksize = S.store.h5file.get_node('/parameters', 'chunksize')
     return S
 
 

@@ -44,40 +44,35 @@ class BaseStore(object):
         return chunkshape
 
     def __init__(self, fname, path='./', nparams=dict(), attr_params=dict(),
-                 overwrite=True):
+                 mode='r'):
         """Return a new HDF5 file to store simulation results.
 
         The HDF5 file has two groups:
         '/parameters'
             containing all the simulation numeric-parameters
 
-        If `overwrite=True` (default) `fname` will be overwritten (if exists).
+        If `mode='w'`, `fname` will be overwritten (if exists).
         """
         assert Path(path).exists()
         self.filepath = Path(path, fname)
-        if not overwrite:
-            # Open file for appending
-            self.data_file = tables.open_file(str(self.filepath), mode = "a")
-        else:
-            # Create a new empty file
-            self.data_file = tables.open_file(str(self.filepath), mode = "w",
-                                              title="PyBroMo simulation file",
-                                              comp_filter=default_compression)
+        self.h5file = tables.open_file(str(self.filepath), mode=mode)
+        if mode != 'r':
+            self.h5file.title = "PyBroMo simulation file"
+
             # Create the groups
-            self.data_file.create_group('/', 'parameters',
-                                        'Simulation parameters')
+            self.h5file.create_group('/', 'parameters', 'Simulation parameters')
             # Set the simulation parameters
             self.set_sim_params(nparams, attr_params)
 
     def close(self):
-        self.data_file.close()
+        self.h5file.close()
 
     def open(self):
         """Reopen a file after has been closed (uses the store filename)."""
-        self.__init__(self.data_file.filename, overwrite=False)
+        self.__init__(self.h5file.filename, mode='r')
 
     def set_sim_params(self, nparams, attr_params):
-        """Store parameters in `params` in `data_file.root.parameters`.
+        """Store parameters in `params` in `h5file.root.parameters`.
 
         `nparams` (dict)
             A dict as returned by `get_params()` in `ParticlesSimulation()`
@@ -92,17 +87,17 @@ class BaseStore(object):
         """
         for name, value in nparams.items():
             val = value[0] if value[0] is not None else 'none'
-            self.data_file.create_array('/parameters', name, obj=val,
-                                        title=value[1])
+            self.h5file.create_array('/parameters', name, obj=val,
+                                     title=value[1])
         for name, value in attr_params.items():
-                self.data_file.set_node_attr('/parameters', name, value)
+                self.h5file.set_node_attr('/parameters', name, value)
 
     @property
     def numeric_params(self):
         """Return a dict containing all (key, values) stored in '/parameters'
         """
         nparams = dict()
-        for p in self.data_file.root.parameters:
+        for p in self.h5file.root.parameters:
             nparams[p.name] = p.read()
         return nparams
 
@@ -114,14 +109,14 @@ class BaseStore(object):
         in ParticlesSimulation().
         """
         nparams = dict()
-        for p in self.data_file.root.parameters:
+        for p in self.h5file.root.parameters:
             nparams[p.name] = (p.read(), p.title)
         return nparams
 
 
 class TrajectoryStore(BaseStore):
     def __init__(self, fname, path='./', nparams=dict(), attr_params=dict(),
-                 overwrite=True):
+                 mode='r'):
         """Return a new HDF5 file to store simulation results.
 
         The HDF5 file has two groups:
@@ -131,16 +126,15 @@ class TrajectoryStore(BaseStore):
         '/trajectories'
             containing simulation trajectories (positions, emission traces)
 
-        If `overwrite=True` (default) `fname` will be overwritten (if exists).
+        If `mode='w'`, `fname` will be overwritten (if exists).
         """
         super().__init__(fname, path=path, nparams=nparams,
-                         attr_params=attr_params, overwrite=overwrite)
-        if overwrite:
+                         attr_params=attr_params, mode=mode)
+        if mode != 'r':
             # Create the groups
-            self.data_file.create_group('/', 'trajectories',
-                                        'Simulated trajectories')
-            self.data_file.create_group('/', 'psf',
-                                        'PSFs used in the simulation')
+            self.h5file.create_group('/', 'trajectories',
+                                     'Simulated trajectories')
+            self.h5file.create_group('/', 'psf', 'PSFs used in the simulation')
 
     def add_trajectory(self, name, overwrite=False, shape=(0,), title='',
                        chunksize=2**19, comp_filter=default_compression,
@@ -148,11 +142,11 @@ class TrajectoryStore(BaseStore):
                        chunkslice='bytes'):
         """Add an trajectory array in '/trajectories'.
         """
-        group = self.data_file.root.trajectories
+        group = self.h5file.root.trajectories
         if name in group:
             print("%s already exists ..." % name, end='')
             if overwrite:
-                self.data_file.remove_node(group, name)
+                self.h5file.remove_node(group, name)
                 print(" deleted.")
             else:
                 print(" old returned.")
@@ -162,7 +156,7 @@ class TrajectoryStore(BaseStore):
         num_t_steps = nparams['t_max'] / nparams['t_step']
 
         chunkshape = self.calc_chunkshape(chunksize, shape, kind=chunkslice)
-        store_array = self.data_file.create_earray(
+        store_array = self.h5file.create_earray(
             group, name, atom=atom,
             shape = shape,
             chunkshape = chunkshape,
@@ -216,7 +210,7 @@ class TrajectoryStore(BaseStore):
 
 class TimestampStore(BaseStore):
     def __init__(self, fname, path='./', nparams=dict(), attr_params=dict(),
-                 overwrite=True):
+                 mode='r'):
         """Return a new HDF5 file to store simulation results.
 
         The HDF5 file has two groups:
@@ -229,24 +223,23 @@ class TimestampStore(BaseStore):
         If `overwrite=True` (default) `fname` will be overwritten (if exists).
         """
         super().__init__(fname, path=path, nparams=nparams,
-                         attr_params=attr_params, overwrite=overwrite)
-        if overwrite:
+                         attr_params=attr_params, mode=mode)
+        if mode != 'r':
             # Create the groups
-            self.data_file.create_group('/', 'timestamps',
-                                        'Simulated timestamps')
+            self.h5file.create_group('/', 'timestamps', 'Simulated timestamps')
 
     def add_timestamps(self, name, clk_p, max_rate, bg_rate,
                        num_particles, bg_particle,
                        overwrite=False, chunksize=2**16,
                        comp_filter=default_compression):
-        if name in self.data_file.root.timestamps:
+        if name in self.h5file.root.timestamps:
             if overwrite:
-                self.data_file.remove_node('/timestamps', name=name)
-                self.data_file.remove_node('/timestamps', name=name + '_par')
+                self.h5file.remove_node('/timestamps', name=name)
+                self.h5file.remove_node('/timestamps', name=name + '_par')
             else:
                 raise ValueError('Timestamp array already exist (%s)' % name)
 
-        times_array = self.data_file.create_earray(
+        times_array = self.h5file.create_earray(
             '/timestamps', name, atom=tables.Int64Atom(),
             shape = (0,),
             chunkshape = (chunksize,),
@@ -255,7 +248,7 @@ class TimestampStore(BaseStore):
         times_array.set_attr('clk_p', clk_p)
         times_array.set_attr('max_rate', max_rate)
         times_array.set_attr('bg_rate', bg_rate)
-        particles_array = self.data_file.create_earray(
+        particles_array = self.h5file.create_earray(
             '/timestamps', name + '_par', atom=tables.UInt8Atom(),
             shape = (0,),
             chunkshape = (chunksize,),

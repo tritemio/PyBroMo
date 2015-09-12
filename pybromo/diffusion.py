@@ -303,7 +303,7 @@ class ParticlesSimulation(object):
         """[1:]
 
     def _open_store(self, store, prefix='', path='./', chunksize=2**19,
-                    chunkslice='bytes', overwrite=True):
+                    chunkslice='bytes', mode='w'):
         """Open and setup the on-disk storage file (pytables HDF5 file).
 
         Low level method used to implement different stores.
@@ -320,12 +320,12 @@ class ParticlesSimulation(object):
         store_fname = prefix + self.compact_name() + '.hdf5'
         attr_params = dict(particles=self.particles, box=self.box)
         kwargs = dict(path=path, nparams=nparams, attr_params=attr_params,
-                      overwrite=overwrite)
+                      mode=mode)
         store = store(store_fname, **kwargs)
         return store
 
     def open_store_traj(self, prefix='pybromo_', path='./', chunksize=2**19,
-                        chunkslice='bytes', overwrite=True):
+                        chunkslice='bytes', mode='w'):
         """Open and setup the on-disk storage file (pytables HDF5 file).
 
         Arguments:
@@ -333,13 +333,13 @@ class ParticlesSimulation(object):
         self.store = self._open_store(TrajectoryStore, prefix, path,
                                       chunksize=chunksize,
                                       chunkslice=chunkslice,
-                                      overwrite=overwrite)
+                                      mode=mode)
 
-        self.psf_pytables = self.psf.to_hdf5(self.store.data_file, '/psf')
-        self.store.data_file.create_hard_link('/psf', 'default_psf',
-                                              target=self.psf_pytables)
-        # Note psf.fname is the psf name in `data_file.root.psf`
-        self.traj_group = self.store.data_file.root.trajectories
+        self.psf_pytables = self.psf.to_hdf5(self.store.h5file, '/psf')
+        self.store.h5file.create_hard_link('/psf', 'default_psf',
+                                           target=self.psf_pytables)
+        # Note psf.fname is the psf name in `h5file.root.psf`
+        self.traj_group = self.store.h5file.root.trajectories
         self.traj_group._v_attrs['psf_name'] = self.psf.fname
 
         kwargs = dict(chunksize=self.chunksize, chunkslice=chunkslice)
@@ -348,7 +348,7 @@ class ParticlesSimulation(object):
         self.position = self.store.add_position(**kwargs)
 
     def open_store_timestamp(self, prefix='ts_', path='./', chunksize=2**19,
-                             chunkslice='bytes', overwrite=True):
+                             chunkslice='bytes', mode='w'):
         """Open and setup the on-disk storage file (pytables HDF5 file).
 
         Arguments:
@@ -356,8 +356,8 @@ class ParticlesSimulation(object):
         self.ts_store = self._open_store(TimestampStore, prefix, path,
                                          chunksize=chunksize,
                                          chunkslice=chunkslice,
-                                         overwrite=overwrite)
-        self.ts_group = self.ts_store.data_file.root.timestamps
+                                         mode=mode)
+        self.ts_group = self.ts_store.h5file.root.timestamps
 
     def _sim_trajectories(self, time_size, start_pos, rs,
                           total_emission=False, save_pos=False,
@@ -481,11 +481,11 @@ class ParticlesSimulation(object):
             if save_pos:
                 self.position.append(np.vstack(POS).astype('float32'))
             i_chunk += 1
-            self.store.data_file.flush()
+            self.store.h5file.flush()
 
         # Save current random state
         self.traj_group._v_attrs['last_random_state'] = rs.get_state()
-        self.store.data_file.flush()
+        self.store.h5file.flush()
 
     def _get_ts_name_core(self, max_rate, bg_rate):
         return 'max_rate%dkcps_bg%dcps' % (max_rate * 1e-3, bg_rate)
@@ -520,8 +520,8 @@ class ParticlesSimulation(object):
         """
         name = self.get_timestamps_name(max_rate, bg_rate, hash_)
         par_name = name + '_par'
-        timestamps = self.ts_store.data_file.get_node('/timestamps', name)
-        particles = self.ts_store.data_file.get_node('/timestamps', par_name)
+        timestamps = self.ts_store.h5file.get_node('/timestamps', name)
+        particles = self.ts_store.h5file.get_node('/timestamps', par_name)
         return timestamps, particles
 
     def _sim_timestamps(self, max_rate, bg_rate, emission, i_start, rs,
@@ -583,7 +583,7 @@ class ParticlesSimulation(object):
             comp_filter (tables.Filter or None): compression filter to use
                 for the on-disk `timestamps` and `tparticles` arrays.
                 If None use default compression.
-            overwrite (bool): if True overwrite an timestamp array with the
+             (bool): if True  an timestamp array with the
                 same name.
             scale (int): `self.t_step` is multiplied by `scale` to obtain the
                 timestamps units in seconds.
@@ -626,7 +626,7 @@ class ParticlesSimulation(object):
 
         # Save current random state so it can be resumed in the next session
         self.ts_group._v_attrs['last_random_state'] = rs.get_state()
-        self.ts_store.data_file.flush()
+        self.ts_store.h5file.flush()
 
 def sim_timetrace(emission, max_rate, t_step):
     """Draw random emitted photons from Poisson(emission_rates).
