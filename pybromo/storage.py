@@ -43,7 +43,7 @@ class BaseStore(object):
             chunkshape = (shape[0], shape[1], chunksize / divisor)
         return chunkshape
 
-    def __init__(self, fname, path='./', nparams=dict(), attr_params=dict(),
+    def __init__(self, datafile, path='./', nparams=dict(), attr_params=dict(),
                  mode='r'):
         """Return a new HDF5 file to store simulation results.
 
@@ -51,11 +51,15 @@ class BaseStore(object):
         '/parameters'
             containing all the simulation numeric-parameters
 
-        If `mode='w'`, `fname` will be overwritten (if exists).
+        If `mode='w'`, `datafile` will be overwritten (if exists).
         """
-        assert Path(path).exists()
-        self.filepath = Path(path, fname)
+        if isinstance(datafile, Path):
+            self.filepath = datafile
+        else:
+            assert Path(path).exists()
+            self.filepath = Path(path, datafile)
         self.h5file = tables.open_file(str(self.filepath), mode=mode)
+        self.filename = str(self.filepath)
         if mode != 'r':
             self.h5file.title = "PyBroMo simulation file"
 
@@ -115,7 +119,7 @@ class BaseStore(object):
 
 
 class TrajectoryStore(BaseStore):
-    def __init__(self, fname, path='./', nparams=dict(), attr_params=dict(),
+    def __init__(self, datafile, path='./', nparams=dict(), attr_params=dict(),
                  mode='r'):
         """Return a new HDF5 file to store simulation results.
 
@@ -126,9 +130,9 @@ class TrajectoryStore(BaseStore):
         '/trajectories'
             containing simulation trajectories (positions, emission traces)
 
-        If `mode='w'`, `fname` will be overwritten (if exists).
+        If `mode='w'`, `datafile` will be overwritten (if exists).
         """
-        super().__init__(fname, path=path, nparams=nparams,
+        super().__init__(datafile, path=path, nparams=nparams,
                          attr_params=attr_params, mode=mode)
         if mode != 'r':
             # Create the groups
@@ -209,7 +213,7 @@ class TrajectoryStore(BaseStore):
 
 
 class TimestampStore(BaseStore):
-    def __init__(self, fname, path='./', nparams=dict(), attr_params=dict(),
+    def __init__(self, datafile, path='./', nparams=dict(), attr_params=dict(),
                  mode='r'):
         """Return a new HDF5 file to store simulation results.
 
@@ -220,9 +224,9 @@ class TimestampStore(BaseStore):
         '/timestamps'
             containing simulated timestamps
 
-        If `overwrite=True` (default) `fname` will be overwritten (if exists).
+        If `overwrite=True` (default) `datafile` will be overwritten (if exists).
         """
-        super().__init__(fname, path=path, nparams=nparams,
+        super().__init__(datafile, path=path, nparams=nparams,
                          attr_params=attr_params, mode=mode)
         if mode != 'r':
             # Create the groups
