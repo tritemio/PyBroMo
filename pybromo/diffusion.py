@@ -183,7 +183,7 @@ class ParticlesSimulation(object):
         return datafiles[0]
 
     @staticmethod
-    def from_datafile(hash_, path='./', ignore_timestamps=False):
+    def from_datafile(hash_, path='./', ignore_timestamps=False, mode='r'):
         """Load simulation from disk trajectories and (when present) timestamps.
         """
         path = Path(path)
@@ -213,7 +213,7 @@ class ParticlesSimulation(object):
         file_ts = ParticlesSimulation.datafile_from_hash(
             hash_, prefix='ts', path=path)
         if not ignore_timestamps and file_ts.exists():
-            S.ts_store = TrajectoryStore(file_ts, mode='r')
+            S.ts_store = TimestampStore(file_ts, mode=mode)
             S.ts_group = S.ts_store.h5file.root.timestamps
         return S
 
