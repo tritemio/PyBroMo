@@ -15,12 +15,14 @@ from builtins import range, zip
 import os
 import hashlib
 import itertools
+from pathlib import Path
 
 import numpy as np
 from numpy import array, sqrt
 
 from .storage import TrajectoryStore, TimestampStore
 from .iter_chunks import iter_chunksize, iter_chunk_index
+from .psflib import NumericPSF
 
 
 ## Avogadro constant
@@ -171,6 +173,50 @@ def wrap_mirror(a, a1, a2):
 class ParticlesSimulation(object):
     """Class that performs the Brownian motion simulation of N particles.
     """
+    @staticmethod
+    def datafile_from_hash(hash_, prefix, path):
+        """Return pathlib.Path for a data-file with given hash and prefix.
+        """
+        datafiles = list(path.glob('%s_%s*.h*' % (prefix, hash_)))
+        if len(datafiles) > 1:
+            raise ValueError('Glob matched more than 1 file!')
+        return datafiles[0]
+
+    @staticmethod
+    def from_datafile(hash_, path='./'):
+        """Load simulation from disk trajectories and (when present) timestamps.
+        """
+        path = Path(path)
+        assert path.exists()
+
+        file_traj = ParticlesSimulation.datafile_from_hash(
+            hash_, prefix='pybromo', path=path)
+        store = TrajectoryStore(file_traj, mode='r')
+
+        psf_pytables = store.h5file.get_node('/psf/default_psf')
+        psf = NumericPSF(psf_pytables=psf_pytables)
+        box = store.h5file.get_node_attr('/parameters', 'box')
+        P = store.h5file.get_node_attr('/parameters', 'particles')
+
+        names = ['t_step', 't_max', 'EID', 'ID']
+        kwargs = {name: store.numeric_params[name] for name in names}
+        S = ParticlesSimulation(particles=P, box=box, psf=psf, **kwargs)
+
+        # Emulate S.open_store_traj()
+        S.store = store
+        S.psf_pytables = psf_pytables
+        S.traj_group = S.store.h5file.root.trajectories
+        S.emission = S.store.h5file.root.trajectories.emission
+        S.emission_tot = S.store.h5file.root.trajectories.emission_tot
+        S.position = S.store.h5file.root.trajectories.position
+        S.chunksize = S.store.h5file.get_node('/parameters', 'chunksize')
+        file_ts = ParticlesSimulation.datafile_from_hash(
+            hash_, prefix='ts', path=path)
+        if file_ts.exists():
+            S.ts_store = TrajectoryStore(file_ts, mode='r')
+            S.ts_group = S.ts_store.h5file.root.timestamps
+        return S
+
     def __init__(self, t_step, t_max, particles, box, psf, EID=0, ID=0):
         """Initialize the simulation parameters.
 
@@ -347,7 +393,7 @@ class ParticlesSimulation(object):
         self.emission = self.store.add_emission(**kwargs)
         self.position = self.store.add_position(**kwargs)
 
-    def open_store_timestamp(self, prefix='ts_', path='./', chunksize=2**19,
+    def open_store_timestamp(self, prefix='times_', path='./', chunksize=2**19,
                              chunkslice='bytes', mode='w'):
         """Open and setup the on-disk storage file (pytables HDF5 file).
 

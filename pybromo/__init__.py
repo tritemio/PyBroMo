@@ -10,7 +10,6 @@ del get_versions
 
 from . import loadutils as lu
 from . import diffusion
-from . import manage
 from . import timestamps
 from . import plot
 
