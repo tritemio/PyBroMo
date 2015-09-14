@@ -560,6 +560,15 @@ class ParticlesSimulation(object):
         return '%s_rs_%s' % (self._get_ts_name_core(max_rate, bg_rate),
                              hash_(rs_state)[:hashsize])
 
+    def _get_ts_name_mix(self, max_rates, populations, bg_rate, rs_state,
+                         hashsize=4):
+        pop1, pop2 = populations
+        max_rate1, max_rate2 = max_rates
+        s = 'Pop1_P%d_%d_max_rate%dkcps_Pop2_P%d_%d_max_rate%dkcps_bg%dcps' % (
+            pop1.start, pop1.stop - 1, max_rate1 * 1e-3,
+            pop2.start, pop2.stop - 1, max_rate2 * 1e-3, bg_rate)
+        return '%s_rs_%s' % (s, hash_(rs_state)[:hashsize])
+
     @property
     def timestamp_names(self):
         names = []
@@ -730,9 +739,10 @@ class ParticlesSimulation(object):
             else:
                 print("INFO: Random state initialized from seed (%d)." % seed)
 
-        name = self._get_ts_name(max_rate, bg_rate, rs.get_state())
+        name = self._get_ts_name_mix(max_rates, populations, bg_rate,
+                                     rs.get_state())
         kw = dict(name=name, clk_p=self.t_step / scale,
-                  max_rate=max_rate, bg_rate=bg_rate,
+                  max_rate=max_rates, bg_rate=bg_rate, populations=populations,
                   num_particles=self.num_particles,
                   bg_particle=self.num_particles,
                   overwrite=overwrite, chunksize=chunksize)

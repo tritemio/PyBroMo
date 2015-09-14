@@ -224,7 +224,7 @@ class TimestampStore(BaseStore):
         '/timestamps'
             containing simulated timestamps
 
-        If `overwrite=True` (default) `datafile` will be overwritten (if exists).
+        If `overwrite=True` (default) `datafile` is overwritten (if exists).
         """
         super().__init__(datafile, path=path, nparams=nparams,
                          attr_params=attr_params, mode=mode)
@@ -233,7 +233,7 @@ class TimestampStore(BaseStore):
             self.h5file.create_group('/', 'timestamps', 'Simulated timestamps')
 
     def add_timestamps(self, name, clk_p, max_rate, bg_rate,
-                       num_particles, bg_particle,
+                       num_particles, bg_particle, populations=None,
                        overwrite=False, chunksize=2**16,
                        comp_filter=default_compression):
         if name in self.h5file.root.timestamps:
@@ -252,6 +252,7 @@ class TimestampStore(BaseStore):
         times_array.set_attr('clk_p', clk_p)
         times_array.set_attr('max_rate', max_rate)
         times_array.set_attr('bg_rate', bg_rate)
+        times_array.set_attr('populations', populations)
         particles_array = self.h5file.create_earray(
             '/timestamps', name + '_par', atom=tables.UInt8Atom(),
             shape = (0,),
