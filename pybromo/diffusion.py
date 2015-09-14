@@ -177,6 +177,9 @@ class MultipleMatchesError(Exception):
 class ParticlesSimulation(object):
     """Class that performs the Brownian motion simulation of N particles.
     """
+    _PREFIX_TRAJ = 'pybromo'
+    _PREFIX_TS = 'times'
+
     @staticmethod
     def datafile_from_hash(hash_, prefix, path):
         """Return pathlib.Path for a data-file with given hash and prefix.
@@ -197,7 +200,7 @@ class ParticlesSimulation(object):
         assert path.exists()
 
         file_traj = ParticlesSimulation.datafile_from_hash(
-            hash_, prefix='pybromo', path=path)
+            hash_, prefix=ParticlesSimulation._PREFIX_TRAJ, path=path)
         store = TrajectoryStore(file_traj, mode='r')
 
         psf_pytables = store.h5file.get_node('/psf/default_psf')
@@ -220,7 +223,7 @@ class ParticlesSimulation(object):
         if not ignore_timestamps:
             try:
                 file_ts = ParticlesSimulation.datafile_from_hash(
-                    hash_, prefix='ts', path=path)
+                    hash_, prefix=ParticlesSimulation._PREFIX_TS, path=path)
             except NoMatchError:
                 # There are no timestamps saved.
                 pass
@@ -376,20 +379,22 @@ class ParticlesSimulation(object):
         nparams = self.numeric_params
         self.chunksize = chunksize
         nparams.update(chunksize=(chunksize, 'Chunksize for arrays'))
-        store_fname = prefix + self.compact_name() + '.hdf5'
+        store_fname = '%s_%s.hdf5' % (prefix, self.compact_name())
         attr_params = dict(particles=self.particles, box=self.box)
         kwargs = dict(path=path, nparams=nparams, attr_params=attr_params,
                       mode=mode)
         store = store(store_fname, **kwargs)
         return store
 
-    def open_store_traj(self, prefix='pybromo_', path='./', chunksize=2**19,
-                        chunkslice='bytes', mode='w'):
+    def open_store_traj(self, path='./', chunksize=2**19, chunkslice='bytes',
+                        mode='w'):
         """Open and setup the on-disk storage file (pytables HDF5 file).
 
         Arguments:
         """ + self.__DOCS_STORE_ARGS___
-        self.store = self._open_store(TrajectoryStore, prefix, path,
+        self.store = self._open_store(TrajectoryStore,
+                                      prefix=ParticlesSimulation._PREFIX_TRAJ,
+                                      path=path,
                                       chunksize=chunksize,
                                       chunkslice=chunkslice,
                                       mode=mode)
@@ -413,6 +418,8 @@ class ParticlesSimulation(object):
         Arguments:
         """ + self.__DOCS_STORE_ARGS___
         self.ts_store = self._open_store(TimestampStore, prefix, path,
+                                         prefix=ParticlesSimulation._PREFIX_TS,
+                                         path=path,
                                          chunksize=chunksize,
                                          chunkslice=chunkslice,
                                          mode=mode)
