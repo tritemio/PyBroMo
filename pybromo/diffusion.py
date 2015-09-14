@@ -596,38 +596,34 @@ class ParticlesSimulation(object):
 
         Uses attributes `n_samples`, ``
         """
-        fractions = [5, 2, 8, 4, 6, 1, 9, 3, 7, 0, 5, 2, 8, 4, 6, 1, 9, 3, 7, 0]
-
         counts_chunk = sim_timetrace_bg(emission, max_rate, bg_rate,
                                         self.t_step, rs=rs)
-        index = np.arange(0, counts_chunk.shape[1])
+        ts_range = (np.arange(counts_chunk.shape[1]) + i_start) * scale
 
         # Loop for each particle to compute timestamps
-        times_chunk_p = []      # <-- Try preallocating array
-        par_index_chunk_p = []  # <-- Try preallocating array
-        for p_i, counts_chunk_p_i in enumerate(counts_chunk.copy()):
-            # Compute timestamps for paricle p_i for all bins with counts
-            times_c_i = [(index[counts_chunk_p_i >= 1] + i_start) * scale]
-            # Additional timestamps for bins with counts > 1
-            for frac, v in zip(fractions, range(2, max_counts + 1)):
-                times_c_i.append(
-                    (index[counts_chunk_p_i >= v] + i_start) * scale + frac)
+        times_chunk_p = []
+        par_index_chunk_p = []
+        times_c_i = []
+        for ip, counts_chunk_ip in enumerate(counts_chunk.copy()):
+            # Compute timestamps for particle ip for all bins with counts
+            for v in range(1, max_counts + 1):
+                times_c_i.append(ts_range[counts_chunk_ip >= v])
 
             # Stack the arrays from different "counts"
             t = np.hstack(times_c_i)
             times_chunk_p.append(t)
-            par_index_chunk_p.append(np.full(t.size, p_i, dtype='u1'))
+            par_index_chunk_p.append(np.full(t.size, ip, dtype='u1'))
 
         # Merge the arrays of different particles
-        times_chunk_s = np.hstack(times_chunk_p)  # <-- Try preallocating
-        par_index_chunk_s = np.hstack(par_index_chunk_p)  # <-- this too
+        times_chunk = np.hstack(times_chunk_p)
+        par_index_chunk = np.hstack(par_index_chunk_p)
 
         # Sort timestamps inside the merged chunk
-        index_sort = times_chunk_s.argsort(kind='mergesort')
-        times_chunk_s = times_chunk_s[index_sort]
-        par_index_chunk_s = par_index_chunk_s[index_sort]
+        index_sort = times_chunk.argsort(kind='mergesort')
+        times_chunk = times_chunk[index_sort]
+        par_index_chunk = par_index_chunk[index_sort]
 
-        return times_chunk_s, par_index_chunk_s
+        return times_chunk, par_index_chunk
 
     def simulate_timestamps(self, max_rate=1, bg_rate=0, rs=None, seed=1,
                             chunksize=2**16, comp_filter=None,
@@ -701,32 +697,57 @@ def sim_timetrace(emission, max_rate, t_step):
     return np.random.poisson(lam=emission_rates).astype(np.uint8)
 
 def sim_timetrace_bg(emission, max_rate, bg_rate, t_step, rs=None):
-    """Draw random emitted photons from Poisson(emission_rates).
-    Return an uint8 array of counts with shape[0] == emission.shape[0] + 1.
-    The last row is a "fake" particle representing Poisson background.
+    """Draw random emitted photons from r.v. ~ Poisson(emission_rates).
+
+    Arguments:
+        emission (2D array): array of normalized emission rates. One row per
+            particle (axis = 0). Columns are the different time steps.
+        max_rate (float): the peak emission rate in Hz.
+        bg_rate (float or None): rate of a constant Poisson background (Hz).
+            Background is added as an additional row in the returned array
+            of counts. If None, no background simulated.
+        t_step (float): duration of a time step in seconds.
+        rs (RandomState or None): object used to draw the random numbers.
+            If None, a new RandomState is created using a random seed.
+
+    Returns:
+        `counts` an 2D uint8 array of counts in each time bin, for each
+        particle. If `bg_rate` is None counts.shape == emission.shape.
+        Otherwise, `counts` has one row more than `emission` for storing
+        the constant Poisson background.
     """
     if rs is None:
         rs = np.random.RandomState()
     em = np.atleast_2d(emission).astype('float64', copy=False)
-    counts = np.zeros((em.shape[0] + 1, em.shape[1]), dtype='u1')
+    counts_nrows = em.shape[0]
+    if bg_rate is not None:
+        counts_nrows += 1   # add a row for poisson background
+    counts = np.zeros((counts_nrows, em.shape[1]), dtype='u1')
     # In-place computation
     # NOTE: the caller will see the modification
     em *= (max_rate * t_step)
-    # Use automatic type conversion int64 -> uint8
-    counts[:-1] = rs.poisson(lam=em)
-    counts[-1] = rs.poisson(lam=bg_rate * t_step, size=em.shape[1])
+    # Use automatic type conversion int64 (counts_par) -> uint8 (counts)
+    counts_par = rs.poisson(lam=em)
+    if bg_rate is None:
+        counts[:] = counts_par
+    else:
+        counts[:-1] = counts_par
+        counts[-1] = rs.poisson(lam=bg_rate * t_step, size=em.shape[1])
     return counts
 
 def sim_timetrace_bg2(emission, max_rate, bg_rate, t_step, rs=None):
-    """Draw random emitted photons from Poisson(emission_rates).
-    Return an uint8 array of counts with shape[0] == emission.shape[0] + 1.
-    The last row is a "fake" particle representing Poisson background.
+    """Draw random emitted photons from r.v. ~ Poisson(emission_rates).
+
+    This is an alternative implementation of :func:`sim_timetrace_bg`.
     """
     if rs is None:
         rs = np.random.RandomState()
     emiss_bin_rate = np.zeros((emission.shape[0] + 1, emission.shape[1]),
                               dtype='float64')
     emiss_bin_rate[:-1] = emission * max_rate * t_step
-    emiss_bin_rate[-1] = bg_rate * t_step
-    counts = rs.poisson(lam=emiss_bin_rate).astype('uint8')
+    if bg_rate is not None:
+        emiss_bin_rate[-1] = bg_rate * t_step
+        counts = rs.poisson(lam=emiss_bin_rate).astype('uint8')
+    else:
+        counts = rs.poisson(lam=emiss_bin_rate[:-1]).astype('uint8')
     return counts
