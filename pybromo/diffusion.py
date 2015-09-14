@@ -578,19 +578,23 @@ class ParticlesSimulation(object):
             names.append(node.name)
         return names
 
-    def get_timestamps_name(self, max_rate, bg_rate, hash_=''):
+    def get_timestamps_name(self, max_rate=None, bg_rate=None, hash_=''):
         """Return name of the matching timestamps array.
         """
-        name = self._get_ts_name_core(max_rate, bg_rate)
-        name += '_rs_%s' % hash_
-        matches = [n for n in self.timestamp_names if name in n]
+        if len(hash_) > 0:
+            pattern = hash_
+        else:
+            assert max_rate is not None and bg_rate is not None
+            pattern = self._get_ts_name_core(max_rate, bg_rate)
+            pattern += '_rs_%s' % hash_
+        matches = [n for n in self.timestamp_names if pattern in n]
         if len(matches) == 0:
             raise ValueError('No timestamps matching.')
         elif len(matches) > 1:
             raise ValueError('Multiple matches, try specifying `hash_`.')
         return matches[0]
 
-    def get_timestamps(self, max_rate, bg_rate, hash_=''):
+    def get_timestamps(self, max_rate=None, bg_rate=None, hash_=''):
         """Return matching (timestamps, particles) pytables arrays.
         """
         name = self.get_timestamps_name(max_rate, bg_rate, hash_)
