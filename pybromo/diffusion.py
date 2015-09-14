@@ -169,6 +169,10 @@ def wrap_mirror(a, a1, a2):
     a[a < a1] = a1 + (a1 - a[a < a1])
     return a
 
+class NoMatchError(Exception):
+    pass
+class MultipleMatchesError(Exception):
+    pass
 
 class ParticlesSimulation(object):
     """Class that performs the Brownian motion simulation of N particles.
@@ -177,9 +181,12 @@ class ParticlesSimulation(object):
     def datafile_from_hash(hash_, prefix, path):
         """Return pathlib.Path for a data-file with given hash and prefix.
         """
-        datafiles = list(path.glob('%s_%s*.h*' % (prefix, hash_)))
+        pattern = '%s_%s*.h*' % (prefix, hash_)
+        datafiles = list(path.glob(pattern))
+        if len(datafiles) == 0:
+            raise NoMatchError('No matches for "%s"' % pattern)
         if len(datafiles) > 1:
-            raise ValueError('Glob matched more than 1 file!')
+            raise MultipleMatchesError('More than 1 match for "%s"' % pattern)
         return datafiles[0]
 
     @staticmethod
@@ -210,11 +217,17 @@ class ParticlesSimulation(object):
         S.emission_tot = S.store.h5file.root.trajectories.emission_tot
         S.position = S.store.h5file.root.trajectories.position
         S.chunksize = S.store.h5file.get_node('/parameters', 'chunksize')
-        file_ts = ParticlesSimulation.datafile_from_hash(
-            hash_, prefix='ts', path=path)
-        if not ignore_timestamps and file_ts.exists():
-            S.ts_store = TimestampStore(file_ts, mode=mode)
-            S.ts_group = S.ts_store.h5file.root.timestamps
+        if not ignore_timestamps:
+            try:
+                file_ts = ParticlesSimulation.datafile_from_hash(
+                    hash_, prefix='ts', path=path)
+            except NoMatchError:
+                # There are no timestamps saved.
+                pass
+            else:
+                # Load the timestamps
+                S.ts_store = TimestampStore(file_ts, mode=mode)
+                S.ts_group = S.ts_store.h5file.root.timestamps
         return S
 
     def __init__(self, t_step, t_max, particles, box, psf, EID=0, ID=0):
