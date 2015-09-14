@@ -682,13 +682,98 @@ class ParticlesSimulation(object):
             times_chunk_s, par_index_chunk_s = self._sim_timestamps(
                 max_rate, bg_rate, em_chunk, i_start, rs=rs, scale=scale)
 
-            # Save (ordered) timestamps and corrensponding particles
+            # Save sorted timestamps (suffix '_s') and corresponding particles
             self._timestamps.append(times_chunk_s)
             self._tparticles.append(par_index_chunk_s)
 
         # Save current random state so it can be resumed in the next session
         self.ts_group._v_attrs['last_random_state'] = rs.get_state()
         self.ts_store.h5file.flush()
+
+    def simulate_timestamps_mix(self, max_rates, populations, bg_rate,
+                                rs=None, seed=1, chunksize=2**16,
+                                comp_filter=None, overwrite=False, scale=10,
+                                path='./'):
+        """Compute timestamps and particles arrays and store results to disk.
+
+        The results are accessible as pytables arrays in `.timestamps` and
+        `.tparticles`. The background generated timestamps are assigned a
+        conventional particle number (last particle index + 1).
+
+        Arguments:
+            max_rate (float, cps): max emission rate for a single particle
+            bg_rate (float, cps): rate for a Poisson background process
+            rs (RandomState object): random state object used as random number
+                generator. If None, use a random state initialized from seed.
+            seed (uint): when `rs` is None, `seed` is used to initialize the
+                random state, otherwise is ignored.
+            chunksize (int): chunk size used for the on-disk timestamp array
+            comp_filter (tables.Filter or None): compression filter to use
+                for the on-disk `timestamps` and `tparticles` arrays.
+                If None use default compression.
+             (bool): if True  an timestamp array with the
+                same name.
+            scale (int): `self.t_step` is multiplied by `scale` to obtain the
+                timestamps units in seconds.
+            path (string): folder where to save the data.
+        """
+        if not hasattr(self, 'ts_store'):
+            self.open_store_timestamp(chunksize=chunksize, path=path)
+        if rs is None:
+            rs = np.random.RandomState(seed=seed)
+            # Try to set the random state from the last session to preserve
+            # a single random stream when simulating timestamps multiple times
+            if 'last_random_state' in self.ts_group._v_attrs:
+                rs.set_state(self.ts_group._v_attrs['last_random_state'])
+                print("INFO: Random state set to last saved state"
+                      " in '/timestamps'.")
+            else:
+                print("INFO: Random state initialized from seed (%d)." % seed)
+
+        name = self._get_ts_name(max_rate, bg_rate, rs.get_state())
+        kw = dict(name=name, clk_p=self.t_step / scale,
+                  max_rate=max_rate, bg_rate=bg_rate,
+                  num_particles=self.num_particles,
+                  bg_particle=self.num_particles,
+                  overwrite=overwrite, chunksize=chunksize)
+        if comp_filter is not None:
+            kw.update(comp_filter=comp_filter)
+        self._timestamps, self._tparticles = self.ts_store.add_timestamps(**kw)
+        self.ts_group._v_attrs['init_random_state'] = rs.get_state()
+
+        # Load emission in chunks, and save only the final timestamps
+        bg_rates = np.zeros_like(max_rates)
+        bg_rates[-1] = bg_rate
+        for i_start, i_end in iter_chunk_index(self.n_samples,
+                                               self.emission.chunkshape[1]):
+            em_chunk = self.emission[:, i_start:i_end]
+
+            # Loop for each population
+            ts_chunk_pop_list, par_index_chunk_pop_list = [], []
+            for rate, pop, bg in zip(max_rates, populations, bg_rates):
+                em_chunk_pop = em_chunk[pop]
+                ts_chunk_pop, par_index_chunk_pop = self._sim_timestamps(
+                    rate, bg, em_chunk_pop, i_start, rs=rs, scale=scale)
+                ts_chunk_pop_list.append(ts_chunk_pop)
+                par_index_chunk_pop_list.append(par_index_chunk_pop)
+
+            # Merge populations
+            times_chunk_s = np.hstack(ts_chunk_pop_list)
+            par_index_chunk_s = np.hstack(par_index_chunk_pop_list)
+
+            # Sort timestamps inside the merged chunk
+            index_sort = times_chunk_s.argsort(kind='mergesort')
+            times_chunk_s = times_chunk_s[index_sort]
+            par_index_chunk_s = par_index_chunk_s[index_sort]
+
+            # Save sorted timestamps (suffix '_s') and corresponding particles
+            self._timestamps.append(times_chunk_s)
+            self._tparticles.append(par_index_chunk_s)
+
+        # Save current random state so it can be resumed in the next session
+        self.ts_group._v_attrs['last_random_state'] = rs.get_state()
+        self.ts_store.h5file.flush()
+
 
 def sim_timetrace(emission, max_rate, t_step):
     """Draw random emitted photons from Poisson(emission_rates).
