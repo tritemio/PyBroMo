@@ -233,6 +233,20 @@ class ParticlesSimulation(object):
                 S.ts_group = S.ts_store.h5file.root.timestamps
         return S
 
+    @staticmethod
+    def _get_randomstate(rs, seed, group):
+        if rs is None:
+            rs = np.random.RandomState(seed=seed)
+            # Try to set the random state from the last session to preserve
+            # a single random stream when simulating timestamps multiple times
+            if 'last_random_state' in group._v_attrs:
+                rs.set_state(group._v_attrs['last_random_state'])
+                print("INFO: Random state set to last saved state in '%s'." % \
+                      group._v_name)
+            else:
+                print("INFO: Random state initialized from seed (%d)." % seed)
+        return rs
+
     def __init__(self, t_step, t_max, particles, box, psf, EID=0, ID=0):
         """Initialize the simulation parameters.
 
@@ -392,6 +406,8 @@ class ParticlesSimulation(object):
 
         Arguments:
         """ + self.__DOCS_STORE_ARGS___
+        if hasattr(self, 'store'):
+            return
         self.store = self._open_store(TrajectoryStore,
                                       prefix=ParticlesSimulation._PREFIX_TRAJ,
                                       path=path,
@@ -417,6 +433,8 @@ class ParticlesSimulation(object):
 
         Arguments:
         """ + self.__DOCS_STORE_ARGS___
+        if hasattr(self, 'ts_store'):
+            return
         self.ts_store = self._open_store(TimestampStore,
                                          prefix=ParticlesSimulation._PREFIX_TS,
                                          path=path,
@@ -514,9 +532,8 @@ class ParticlesSimulation(object):
         """
         if rs is None:
             rs = np.random.RandomState(seed=seed)
-        if not hasattr(self, 'store'):
-            self.open_store_traj(chunksize=chunksize, chunkslice=chunkslice,
-                                 path=path)
+        self.open_store_traj(chunksize=chunksize, chunkslice=chunkslice,
+                             path=path)
         # Save current random state for reproducibility
         self.traj_group._v_attrs['init_random_state'] = rs.get_state()
 
@@ -604,10 +621,13 @@ class ParticlesSimulation(object):
         return timestamps, particles
 
     def _sim_timestamps(self, max_rate, bg_rate, emission, i_start, rs,
-                        scale=10, max_counts=4):
+                        scale=10, max_counts=4, sort=True):
         """Simulate timestamps from emission trajectories.
 
-        Uses attributes `n_samples`, ``
+        Uses attributes: `.t_step`.
+
+        Returns:
+            A tuple of two arrays: timestamps and particles.
         """
         counts_chunk = sim_timetrace_bg(emission, max_rate, bg_rate,
                                         self.t_step, rs=rs)
@@ -631,17 +651,18 @@ class ParticlesSimulation(object):
         times_chunk = np.hstack(times_chunk_p)
         par_index_chunk = np.hstack(par_index_chunk_p)
 
-        # Sort timestamps inside the merged chunk
-        index_sort = times_chunk.argsort(kind='mergesort')
-        times_chunk = times_chunk[index_sort]
-        par_index_chunk = par_index_chunk[index_sort]
+        if sort:
+            # Sort timestamps inside the merged chunk
+            index_sort = times_chunk.argsort(kind='mergesort')
+            times_chunk = times_chunk[index_sort]
+            par_index_chunk = par_index_chunk[index_sort]
 
         return times_chunk, par_index_chunk
 
     def simulate_timestamps(self, max_rate=1, bg_rate=0, rs=None, seed=1,
                             chunksize=2**16, comp_filter=None,
                             overwrite=False, scale=10, path='./'):
-        """Compute timestamps and particles arrays and store results to disk.
+        """Compute timestamps and particles arrays storing results to disk.
 
         The results are accessible as pytables arrays in `.timestamps` and
         `.tparticles`. The background generated timestamps are assigned a
@@ -664,18 +685,8 @@ class ParticlesSimulation(object):
                 timestamps units in seconds.
             path (string): folder where to save the data.
         """
-        if not hasattr(self, 'ts_store'):
-            self.open_store_timestamp(chunksize=chunksize, path=path)
-        if rs is None:
-            rs = np.random.RandomState(seed=seed)
-            # Try to set the random state from the last session to preserve
-            # a single random stream when simulating timestamps multiple times
-            if 'last_random_state' in self.ts_group._v_attrs:
-                rs.set_state(self.ts_group._v_attrs['last_random_state'])
-                print("INFO: Random state set to last saved state"
-                      " in '/timestamps'.")
-            else:
-                print("INFO: Random state initialized from seed (%d)." % seed)
+        self.open_store_timestamp(chunksize=chunksize, path=path)
+        rs = _get_randomstate(rs, seed, self.ts_group)
 
         name = self._get_ts_name(max_rate, bg_rate, rs.get_state())
         kw = dict(name=name, clk_p=self.t_step / scale,
@@ -707,14 +718,17 @@ class ParticlesSimulation(object):
                                 rs=None, seed=1, chunksize=2**16,
                                 comp_filter=None, overwrite=False, scale=10,
                                 path='./'):
-        """Compute timestamps and particles arrays and store results to disk.
+        """Compute timestamps for a mixture of 2 populations.
 
-        The results are accessible as pytables arrays in `.timestamps` and
-        `.tparticles`. The background generated timestamps are assigned a
+        The results are saved to disk and accessible as pytables arrays in
+        `.timestamps` and `.tparticles`.
+        The background generated timestamps are assigned a
         conventional particle number (last particle index + 1).
 
         Arguments:
             max_rate (float, cps): max emission rate for a single particle
+            populations (2-tuple of slices): slices for `self.particles` that
+                define the two populations.
             bg_rate (float, cps): rate for a Poisson background process
             rs (RandomState object): random state object used as random number
                 generator. If None, use a random state initialized from seed.
@@ -730,18 +744,8 @@ class ParticlesSimulation(object):
                 timestamps units in seconds.
             path (string): folder where to save the data.
         """
-        if not hasattr(self, 'ts_store'):
-            self.open_store_timestamp(chunksize=chunksize, path=path)
-        if rs is None:
-            rs = np.random.RandomState(seed=seed)
-            # Try to set the random state from the last session to preserve
-            # a single random stream when simulating timestamps multiple times
-            if 'last_random_state' in self.ts_group._v_attrs:
-                rs.set_state(self.ts_group._v_attrs['last_random_state'])
-                print("INFO: Random state set to last saved state"
-                      " in '/timestamps'.")
-            else:
-                print("INFO: Random state initialized from seed (%d)." % seed)
+        self.open_store_timestamp(chunksize=chunksize, path=path)
+        rs = _get_randomstate(rs, seed, self.ts_group)
 
         name = self._get_ts_name_mix(max_rates, populations, bg_rate,
                                      rs.get_state())
@@ -767,7 +771,8 @@ class ParticlesSimulation(object):
             for rate, pop, bg in zip(max_rates, populations, bg_rates):
                 em_chunk_pop = em_chunk[pop]
                 ts_chunk_pop, par_index_chunk_pop = self._sim_timestamps(
-                    rate, bg, em_chunk_pop, i_start, rs=rs, scale=scale)
+                    rate, bg, em_chunk_pop, i_start, rs=rs, scale=scale,
+                    sort=False)
                 ts_chunk_pop_list.append(ts_chunk_pop)
                 par_index_chunk_pop_list.append(par_index_chunk_pop)
 
