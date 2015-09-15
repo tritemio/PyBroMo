@@ -577,13 +577,17 @@ class ParticlesSimulation(object):
         return '%s_rs_%s' % (self._get_ts_name_core(max_rate, bg_rate),
                              hash_(rs_state)[:hashsize])
 
-    def _get_ts_name_mix(self, max_rates, populations, bg_rate, rs_state,
-                         hashsize=4):
+    def _get_ts_name_mix_core(self, max_rates, populations, bg_rate):
         pop1, pop2 = populations
         max_rate1, max_rate2 = max_rates
         s = 'Pop1_P%d_%d_max_rate%dkcps_Pop2_P%d_%d_max_rate%dkcps_bg%dcps' % (
             pop1.start, pop1.stop - 1, max_rate1 * 1e-3,
             pop2.start, pop2.stop - 1, max_rate2 * 1e-3, bg_rate)
+        return s
+
+    def _get_ts_name_mix(self, max_rates, populations, bg_rate, rs_state,
+                         hashsize=4):
+        s = self._get_ts_name_mix_core(max_rates, populations, bg_rate)
         return '%s_rs_%s' % (s, hash_(rs_state)[:hashsize])
 
     @property
@@ -594,6 +598,13 @@ class ParticlesSimulation(object):
                 continue
             names.append(node.name)
         return names
+
+    def timestamps_match_pattern(self, pattern):
+        return [t for t in self.timestamp_names if pattern in t]
+
+    def timestamps_match_mix(self, max_rates, populations, bg_rate):
+        pattern = self._get_ts_name_mix_core(max_rates, populations, bg_rate)
+        return self.timestamps_match_pattern(pattern)
 
     def get_timestamps_name(self, max_rate=None, bg_rate=None, hash_=''):
         """Return name of the matching timestamps array.
