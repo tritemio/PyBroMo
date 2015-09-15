@@ -91,9 +91,11 @@ class MixtureSimulation:
         self.em_rate_d2, self.em_rate_a2 = rates[2:]
         self.em_rate_d1k, self.em_rate_a1k = rates[0] * 1e-3, rates[1] * 1e-3
         self.em_rate_d2k, self.em_rate_a2k = rates[2] * 1e-3, rates[3] * 1e-3
+        self.max_rates_d = (self.em_rate_d1, self.em_rate_d2)
+        self.max_rates_a = (self.em_rate_a1, self.em_rate_a2)
         self.bg_rates = [self.bg_rate_a, self.bg_rate_d]
-        self.pop_slices = populations_slices(S.particles,
-                                             self.num_pop1, self.num_pop2)
+        self.populations = populations_slices(S.particles,
+                                              self.num_pop1, self.num_pop2)
         self.D1, self.D2 = populations_diff_coeff(S.particles,
                                                   self.num_pop1, self.num_pop2)
         self.traj_filename = S.store.filepath.name
@@ -149,19 +151,20 @@ class MixtureSimulation:
         header = ' - Mixture Simulation:'
         print('%s Donor timestamps - %s' % (header, ctime()), flush=True)
         self.S.simulate_timestamps_mix(
-            populations = self.pop_slices,
-            max_rates = (self.em_rate_d1, self.em_rate_d2),
+            populations = self.populations,
+            max_rates = self.max_rates_d,
             bg_rate = self.bg_rate_d,
             rs=rs, overwrite=overwrite, path=path)
         print('%s Acceptor timestamps - %s' % (header, ctime()), flush=True)
         self.S.simulate_timestamps_mix(
-            populations = self.pop_slices,
-            max_rates = (self.em_rate_a1, self.em_rate_a2),
+            populations = self.populations,
+            max_rates = self.max_rates_a,
             bg_rate = self.bg_rate_a,
             rs=rs, overwrite=overwrite, path=path)
         print('%s Completed. %s' % (header, ctime()), flush=True)
 
     def _make_photon_hdf5(ts, a_ch, clk_p, E1, E2):
+
         # globals: S.ts_store.filename, S.t_max
         photon_data = dict(
             timestamps = ts,
