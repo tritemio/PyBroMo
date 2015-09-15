@@ -686,7 +686,7 @@ class ParticlesSimulation(object):
             path (string): folder where to save the data.
         """
         self.open_store_timestamp(chunksize=chunksize, path=path)
-        rs = _get_randomstate(rs, seed, self.ts_group)
+        rs = self._get_randomstate(rs, seed, self.ts_group)
 
         name = self._get_ts_name(max_rate, bg_rate, rs.get_state())
         kw = dict(name=name, clk_p=self.t_step / scale,
@@ -745,7 +745,7 @@ class ParticlesSimulation(object):
             path (string): folder where to save the data.
         """
         self.open_store_timestamp(chunksize=chunksize, path=path)
-        rs = _get_randomstate(rs, seed, self.ts_group)
+        rs = self._get_randomstate(rs, seed, self.ts_group)
 
         name = self._get_ts_name_mix(max_rates, populations, bg_rate,
                                      rs.get_state())
