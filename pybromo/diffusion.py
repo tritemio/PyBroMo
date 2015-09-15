@@ -661,7 +661,8 @@ class ParticlesSimulation(object):
 
     def simulate_timestamps(self, max_rate=1, bg_rate=0, rs=None, seed=1,
                             chunksize=2**16, comp_filter=None,
-                            overwrite=False, scale=10, path='./'):
+                            overwrite=False, scale=10, path='./',
+                            t_chunksize=None):
         """Compute timestamps and particles arrays storing results to disk.
 
         The results are accessible as pytables arrays in `.timestamps` and
@@ -687,6 +688,8 @@ class ParticlesSimulation(object):
         """
         self.open_store_timestamp(chunksize=chunksize, path=path)
         rs = self._get_randomstate(rs, seed, self.ts_group)
+        if t_chunksize is None:
+            t_chunksize = self.emission.chunkshape[1]
 
         name = self._get_ts_name(max_rate, bg_rate, rs.get_state())
         kw = dict(name=name, clk_p=self.t_step / scale,
@@ -700,8 +703,7 @@ class ParticlesSimulation(object):
         self.ts_group._v_attrs['init_random_state'] = rs.get_state()
 
         # Load emission in chunks, and save only the final timestamps
-        for i_start, i_end in iter_chunk_index(self.n_samples,
-                                               self.emission.chunkshape[1]):
+        for i_start, i_end in iter_chunk_index(self.n_samples, t_chunksize):                                             ):
             em_chunk = self.emission[:, i_start:i_end]
             times_chunk_s, par_index_chunk_s = self._sim_timestamps(
                 max_rate, bg_rate, em_chunk, i_start, rs=rs, scale=scale)
