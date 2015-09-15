@@ -622,6 +622,14 @@ class ParticlesSimulation(object):
             raise ValueError('Multiple matches, try specifying `hash_`.')
         return matches[0]
 
+    def get_timestamps_part(self, name):
+        """Return matching (timestamps, particles) pytables arrays.
+        """
+        par_name = name + '_par'
+        timestamps = self.ts_store.h5file.get_node('/timestamps', name)
+        particles = self.ts_store.h5file.get_node('/timestamps', par_name)
+        return timestamps, particles
+
     def get_timestamps(self, max_rate=None, bg_rate=None, hash_=''):
         """Return matching (timestamps, particles) pytables arrays.
         """
