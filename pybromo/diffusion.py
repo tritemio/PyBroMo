@@ -411,13 +411,13 @@ class ParticlesSimulation(object):
         self.emission = self.store.add_emission(**kwargs)
         self.position = self.store.add_position(**kwargs)
 
-    def open_store_timestamp(self, prefix='times_', path='./', chunksize=2**19,
+    def open_store_timestamp(self, path='./', chunksize=2**19,
                              chunkslice='bytes', mode='w'):
         """Open and setup the on-disk storage file (pytables HDF5 file).
 
         Arguments:
         """ + self.__DOCS_STORE_ARGS___
-        self.ts_store = self._open_store(TimestampStore, prefix, path,
+        self.ts_store = self._open_store(TimestampStore,
                                          prefix=ParticlesSimulation._PREFIX_TS,
                                          path=path,
                                          chunksize=chunksize,
