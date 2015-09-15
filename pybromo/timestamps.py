@@ -146,23 +146,25 @@ class MixtureSimulation:
     def filepath(self):
         return Path(self.filename)
 
-    def run(self, rs, overwrite=True, path=None):
+    def run(self, rs, overwrite=True, path=None, chunksize=None):
         if path is None:
             path = str(self.S.store.filepath.parent)
-
+        kwargs = dict(rs=rs, overwrite=overwrite, path=path)
+        if chunksize is not None:
+            kwargs['chunksize'] = chunksize
         header = ' - Mixture Simulation:'
         print('%s Donor timestamps - %s' % (header, ctime()), flush=True)
         self.S.simulate_timestamps_mix(
             populations = self.populations,
             max_rates = self.max_rates_d,
             bg_rate = self.bg_rate_d,
-            rs=rs, overwrite=overwrite, path=path)
+            **kwargs)
         print('%s Acceptor timestamps - %s' % (header, ctime()), flush=True)
         self.S.simulate_timestamps_mix(
             populations = self.populations,
             max_rates = self.max_rates_a,
             bg_rate = self.bg_rate_a,
-            rs=rs, overwrite=overwrite, path=path)
+            **kwargs)
         print('%s Completed. %s' % (header, ctime()), flush=True)
 
     def merge_da(self):
