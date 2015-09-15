@@ -640,7 +640,7 @@ class ParticlesSimulation(object):
         return timestamps, particles
 
     def _sim_timestamps(self, max_rate, bg_rate, emission, i_start, rs,
-                        scale=10, max_counts=4, sort=True):
+                        ip_start=0, scale=10, max_counts=4, sort=True):
         """Simulate timestamps from emission trajectories.
 
         Uses attributes: `.t_step`.
@@ -650,6 +650,11 @@ class ParticlesSimulation(object):
         """
         counts_chunk = sim_timetrace_bg(emission, max_rate, bg_rate,
                                         self.t_step, rs=rs)
+        nrows = emission.shape[0]
+        if bg_rate is not None:
+            nrows += 1
+        assert counts_chunk.shape == (nrows, emission.shape[1])
+
         ts_range = (np.arange(counts_chunk.shape[1]) + i_start) * scale
 
         # Loop for each particle to compute timestamps
@@ -661,10 +666,11 @@ class ParticlesSimulation(object):
             for v in range(1, max_counts + 1):
                 times_c_ip.append(ts_range[counts_chunk_ip >= v])
 
-            # Stack the arrays from different "counts"
+            # Stack the timstamps from different "counts"
             t = np.hstack(times_c_ip)
+            # Append current particle
             times_chunk_p.append(t)
-            par_index_chunk_p.append(np.full(t.size, ip, dtype='u1'))
+            par_index_chunk_p.append(np.full(t.size, ip + ip_start, dtype='u1'))
 
         # Merge the arrays of different particles
         times_chunk = np.hstack(times_chunk_p)
@@ -783,8 +789,7 @@ class ParticlesSimulation(object):
         self.ts_group._v_attrs['init_random_state'] = rs.get_state()
 
         # Load emission in chunks, and save only the final timestamps
-        bg_rates = np.zeros_like(max_rates)
-        bg_rates[-1] = bg_rate
+        bg_rates = (None, bg_rate)
         for i_start, i_end in iter_chunk_index(self.n_samples, t_chunksize):
             em_chunk = self.emission[:, i_start:i_end]
 
@@ -793,8 +798,9 @@ class ParticlesSimulation(object):
             for rate, pop, bg in zip(max_rates, populations, bg_rates):
                 em_chunk_pop = em_chunk[pop]
                 ts_chunk_pop, par_index_chunk_pop = self._sim_timestamps(
-                    rate, bg, em_chunk_pop, i_start, rs=rs, scale=scale,
-                    sort=False)
+                    rate, bg, em_chunk_pop, i_start, ip_start=pop.start,
+                    rs=rs, scale=scale, sort=False)
+
                 ts_chunk_pop_list.append(ts_chunk_pop)
                 par_index_chunk_pop_list.append(par_index_chunk_pop)
 
