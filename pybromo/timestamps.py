@@ -12,6 +12,9 @@ import numpy as np
 from time import ctime
 from pathlib import Path
 
+from ._version import get_versions
+__version__ = get_versions()['version']
+
 
 def merge_da(ts_d, ts_par_d, ts_a, ts_par_a):
     """Merge donor and acceptor timestamps and particle arrays.
@@ -157,3 +160,41 @@ class MixtureSimulation:
             bg_rate = self.bg_rate_a,
             rs=rs, overwrite=overwrite, path=path)
         print('%s Completed. %s' % (header, ctime()), flush=True)
+
+    def _make_photon_hdf5(ts, a_ch, clk_p, E1, E2):
+        # globals: S.ts_store.filename, S.t_max
+        photon_data = dict(
+            timestamps = ts,
+            timestamps_specs = dict(timestamps_unit=clk_p),
+            detectors = a_ch,
+            measurement_specs = dict(
+                measurement_type = 'smFRET',
+                detectors_specs = dict(spectral_ch1 = np.atleast_1d(False),
+                                       spectral_ch2 = np.atleast_1d(True))))
+
+        setup = dict(
+            num_pixels = 2,
+            num_spots = 1,
+            num_spectral_ch = 2,
+            num_polarization_ch = 1,
+            num_split_ch = 1,
+            modulated_excitation = False,
+            lifetime = False)
+
+        provenance = dict(filename=self.S.ts_store.filename,
+                          software='PyBroMo', software_version=__version__)
+
+        identity = dict(
+            author='Antonino Ingargiola',
+            author_affiliation='UCLA')
+
+        description = self.__str__()
+        acquisition_duration = self.S.t_max
+        data = dict(
+            acquisition_duration = round(acquisition_duration),
+            description = description,
+            photon_data = photon_data,
+            setup=setup,
+            provenance=provenance,
+            identity=identity)
+        return data
