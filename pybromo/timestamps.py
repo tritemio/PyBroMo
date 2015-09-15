@@ -9,7 +9,7 @@ This module contains functions to work with timestamps.
 """
 
 import numpy as np
-import time
+from time import ctime
 
 
 def merge_da(ts_d, ts_par_d, ts_a, ts_par_a):
@@ -46,14 +46,14 @@ def em_rates_from_E_DA(em_rate_tot, E_values):
 def em_rates_from_E_unique(em_rate_tot, E_values):
     """Array of unique emission rates for given total emission and E (FRET).
     """
-    em_rates_d, em_rates_a = em_rates_DA_from_E(em_rate_tot, E_values)
+    em_rates_d, em_rates_a = em_rates_from_E_DA(em_rate_tot, E_values)
     return np.unique(np.hstack([em_rates_d, em_rates_a]))
 
 def em_rates_from_E_DA_mix(em_rate_tot1, em_rate_tot2, E_values1, E_values2):
     """D and A emission rates for two populations.
     """
-    em_rates_d1, em_rates_a1 = em_rates_DA_from_E(em_rate_tot1, E_values1)
-    em_rates_d2, em_rates_a2 = em_rates_DA_from_E(em_rate_tot2, E_values2)
+    em_rates_d1, em_rates_a1 = em_rates_from_E_DA(em_rate_tot1, E_values1)
+    em_rates_d2, em_rates_a2 = em_rates_from_E_DA(em_rate_tot2, E_values2)
     return em_rates_d1, em_rates_a1, em_rates_d2, em_rates_a2
 
 def populations_diff_coeff(particles, num_pop1, num_pop2):
@@ -81,7 +81,7 @@ class MixtureSimulation:
         for k, v in params.items():
             setattr(self, k, v)
 
-        rates = em_rates_DA_from_E_mix(self.em_rate_tot1, self.em_rate_tot2,
+        rates = em_rates_from_E_DA_mix(self.em_rate_tot1, self.em_rate_tot2,
                                        self.E1, self.E2)
         self.em_rate_d1, self.em_rate_a1 = rates[:2]
         self.em_rate_d2, self.em_rate_a2 = rates[2:]
@@ -121,18 +121,18 @@ class MixtureSimulation:
     def summarize(self):
         print(str(self), flush=True)
 
-    def run(run(rs, overwrite=True, path='./'):
+    def run(self, rs, overwrite=True, path='./'):
         header = ' - Mixture Simulation:'
-        print('%s Donor timestamps - %s' % (header, time.ctime(), flush=True)
+        print('%s Donor timestamps - %s' % (header, ctime()), flush=True)
         self.S.simulate_timestamps_mix(
             populations = self.pop_slices,
-            max_rates = (self.em_rate_d1, em_rate_d2),
+            max_rates = (self.em_rate_d1, self.em_rate_d2),
             bg_rate = self.bg_rate_d,
             rs=rs, overwrite=overwrite, path=path)
-        print('%s Acceptor timestamps - %s' % (header, time.ctime(), flush=True)
+        print('%s Acceptor timestamps - %s' % (header, ctime()), flush=True)
         self.S.simulate_timestamps_mix(
             populations = self.pop_slices,
-            max_rates = (self.em_rate_a1, em_rate_a2),
+            max_rates = (self.em_rate_a1, self.em_rate_a2),
             bg_rate = self.bg_rate_a,
             rs=rs, overwrite=overwrite, path=path)
-        print('%s Completed. %s' % (header, time.ctime(), flush=True)
+        print('%s Completed. %s' % (header, ctime()), flush=True)

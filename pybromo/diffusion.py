@@ -703,7 +703,7 @@ class ParticlesSimulation(object):
         self.ts_group._v_attrs['init_random_state'] = rs.get_state()
 
         # Load emission in chunks, and save only the final timestamps
-        for i_start, i_end in iter_chunk_index(self.n_samples, t_chunksize):                                             ):
+        for i_start, i_end in iter_chunk_index(self.n_samples, t_chunksize):
             em_chunk = self.emission[:, i_start:i_end]
             times_chunk_s, par_index_chunk_s = self._sim_timestamps(
                 max_rate, bg_rate, em_chunk, i_start, rs=rs, scale=scale)
