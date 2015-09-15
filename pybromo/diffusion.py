@@ -636,7 +636,7 @@ class ParticlesSimulation(object):
         # Loop for each particle to compute timestamps
         times_chunk_p = []
         par_index_chunk_p = []
-        for ip, counts_chunk_ip in enumerate(counts_chunk.copy()):
+        for ip, counts_chunk_ip in enumerate(counts_chunk):
             # Compute timestamps for particle ip for all bins with counts
             times_c_ip = []
             for v in range(1, max_counts + 1):
