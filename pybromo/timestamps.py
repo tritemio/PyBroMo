@@ -12,6 +12,8 @@ import numpy as np
 from time import ctime
 from pathlib import Path
 
+import phconvert as phc
+
 from ._version import get_versions
 __version__ = get_versions()['version']
 
@@ -163,17 +165,35 @@ class MixtureSimulation:
             rs=rs, overwrite=overwrite, path=path)
         print('%s Completed. %s' % (header, ctime()), flush=True)
 
-    def _make_photon_hdf5(ts, a_ch, clk_p, E1, E2):
+    def merge_da(self):
+        print(' - Merging D and A timestamps', flush=True)
+        name_d = self.S.timestamps_match_mix(self.max_rates_d,
+                                             self.populations,
+                                             self.bg_rate_d)[0]
+        name_a = self.S.timestamps_match_mix(self.max_rates_a,
+                                             self.populations,
+                                             self.bg_rate_a)[0]
+        ts_d, ts_par_d = self.S.get_timestamps_part(name_d)
+        ts_a, ts_par_a = self.S.get_timestamps_part(name_a)
+        ts, a_ch, part = merge_da(ts_d, ts_par_d, ts_a, ts_par_a)
+        assert a_ch.sum() == ts_a.shape[0]
+        assert (-a_ch).sum() == ts_d.shape[0]
+        assert a_ch.size == ts_a.shape[0] + ts_d.shape[0]
+        self.ts, self.a_ch, self.part = ts, a_ch, part
+        self.clk_p = ts_d.attrs['clk_p']
+
+    def _make_photon_hdf5(self, identity=None):
 
         # globals: S.ts_store.filename, S.t_max
         photon_data = dict(
-            timestamps = ts,
-            timestamps_specs = dict(timestamps_unit=clk_p),
-            detectors = a_ch,
+            timestamps = self.ts,
+            timestamps_specs = dict(timestamps_unit=self.clk_p),
+            detectors = self.a_ch.view('uint8'),
+            particles = self.part,
             measurement_specs = dict(
                 measurement_type = 'smFRET',
-                detectors_specs = dict(spectral_ch1 = np.atleast_1d(False),
-                                       spectral_ch2 = np.atleast_1d(True))))
+                detectors_specs = dict(spectral_ch1 = np.atleast_1d(0),
+                                       spectral_ch2 = np.atleast_1d(1))))
 
         setup = dict(
             num_pixels = 2,
@@ -187,9 +207,8 @@ class MixtureSimulation:
         provenance = dict(filename=self.S.ts_store.filename,
                           software='PyBroMo', software_version=__version__)
 
-        identity = dict(
-            author='Antonino Ingargiola',
-            author_affiliation='UCLA')
+        if identity is None:
+            identity = dict()
 
         description = self.__str__()
         acquisition_duration = self.S.t_max
@@ -201,3 +220,9 @@ class MixtureSimulation:
             provenance=provenance,
             identity=identity)
         return data
+
+    def save_photon_hdf5(self, identity=None, overwrite=True):
+        self.merge_da()
+        data = self._make_photon_hdf5(identity=identity)
+        phc.hdf5.save_photon_hdf5(data, h5_fname=str(self.filepath),
+                                  overwrite=overwrite)
