@@ -10,6 +10,7 @@ This module contains functions to work with timestamps.
 
 import numpy as np
 from time import ctime
+from pathlib import Path
 
 
 def merge_da(ts_d, ts_par_d, ts_a, ts_par_a):
@@ -80,11 +81,13 @@ class MixtureSimulation:
         self.S = S
         for k, v in params.items():
             setattr(self, k, v)
-
+        self.E1p, self.E2p = self.E1 * 100, self.E2 * 100
         rates = em_rates_from_E_DA_mix(self.em_rate_tot1, self.em_rate_tot2,
                                        self.E1, self.E2)
         self.em_rate_d1, self.em_rate_a1 = rates[:2]
         self.em_rate_d2, self.em_rate_a2 = rates[2:]
+        self.em_rate_d1k, self.em_rate_a1k = rates[0] * 1e-3, rates[1] * 1e-3
+        self.em_rate_d2k, self.em_rate_a2k = rates[2] * 1e-3, rates[3] * 1e-3
         self.bg_rates = [self.bg_rate_a, self.bg_rate_d]
         self.pop_slices = populations_slices(S.particles,
                                              self.num_pop1, self.num_pop2)
@@ -121,7 +124,25 @@ class MixtureSimulation:
     def summarize(self):
         print(str(self), flush=True)
 
-    def run(self, rs, overwrite=True, path='./'):
+    def _compact_repr(self):
+        return ('_E1_{self.E1p:.0f}_D1Em{self.em_rate_d1k:.0f}k_A1Em{self.em_rate_a1k:.0f}'
+                '_E2_{self.E2p:.0f}_D2Em{self.em_rate_d2k:.0f}k_A2Em{self.em_rate_a2k:.0f}'
+                '_BgD{self.bg_rate_d}_BgA{self.bg_rate_a}'
+               ).format(self=self)
+
+    @property
+    def filename(self):
+        basename = self.S.store.filepath.stem.replace('pybromo', 'smFRET')
+        return "%s%s.hdf5" % (basename, self._compact_repr())
+
+    @property
+    def filepath(self):
+        return Path(self.filename)
+
+    def run(self, rs, overwrite=True, path=None):
+        if path is None:
+            path = str(self.S.store.filepath.parent)
+
         header = ' - Mixture Simulation:'
         print('%s Donor timestamps - %s' % (header, ctime()), flush=True)
         self.S.simulate_timestamps_mix(
