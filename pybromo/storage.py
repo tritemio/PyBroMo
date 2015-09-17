@@ -60,7 +60,7 @@ class BaseStore(object):
             self.filepath = Path(path, datafile)
         self.h5file = tables.open_file(str(self.filepath), mode=mode)
         self.filename = str(self.filepath)
-        if mode != 'r':
+        if mode == 'w':
             self.h5file.title = "PyBroMo simulation file"
 
             # Create the groups
@@ -229,8 +229,10 @@ class TimestampStore(BaseStore):
         super().__init__(datafile, path=path, nparams=nparams,
                          attr_params=attr_params, mode=mode)
         if mode != 'r':
-            # Create the groups
-            self.h5file.create_group('/', 'timestamps', 'Simulated timestamps')
+            if 'timestamps' not in self.h5file.root:
+                # Create the groups
+                self.h5file.create_group('/', 'timestamps',
+                                         'Simulated timestamps')
 
     def add_timestamps(self, name, clk_p, max_rate, bg_rate,
                        num_particles, bg_particle, populations=None,
