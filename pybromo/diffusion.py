@@ -217,9 +217,12 @@ class ParticlesSimulation(object):
         S.store = store
         S.psf_pytables = psf_pytables
         S.traj_group = S.store.h5file.root.trajectories
-        S.emission = S.store.h5file.root.trajectories.emission
-        S.emission_tot = S.store.h5file.root.trajectories.emission_tot
-        S.position = S.store.h5file.root.trajectories.position
+        S.emission = S.traj_group.emission
+        S.emission_tot = S.traj_group.emission_tot
+        if 'position' in S.traj_group:
+            S.position = S.traj_group.position
+        elif 'position_rz' in S.traj_group:
+            S.position = S.traj_group.position_rz
         S.chunksize = S.store.h5file.get_node('/parameters', 'chunksize')
         if not ignore_timestamps:
             try:
