@@ -16,6 +16,7 @@ import os
 import hashlib
 import itertools
 from pathlib import Path
+from time import ctime
 
 import numpy as np
 from numpy import array, sqrt
@@ -539,6 +540,7 @@ class ParticlesSimulation(object):
 
         em_store = self.emission_tot if total_emission else self.emission
 
+        print('- Start trajectories simulation - %s' % ctime(), flush=True)
         if verbose:
             print('[PID %d] Diffusion time:' % os.getpid(), end='')
         i_chunk = 0
@@ -548,9 +550,13 @@ class ParticlesSimulation(object):
         par_start_pos = [p.r0 for p in self.particles]
         par_start_pos = (np.vstack(par_start_pos)
                          .reshape(self.num_particles, 3, 1))
+        prev_time = 0
         for time_size in iter_chunksize(self.n_samples, t_chunk_size):
             if verbose:
-                print(' %.1fs' % (chunk_duration * i_chunk), end='')
+                curr_time = int(chunk_duration * (i_chunk + 1))
+                if curr_time > prev_time:
+                    print(' %ds' % curr_time, end='', flush=True)
+                    prev_time = curr_time
 
             POS, em = self._sim_trajectories(time_size, par_start_pos, rs,
                                              total_emission=total_emission,
@@ -569,6 +575,7 @@ class ParticlesSimulation(object):
         # Save current random state
         self.traj_group._v_attrs['last_random_state'] = rs.get_state()
         self.store.h5file.flush()
+        print('\n- End trajectories simulation - %s' % ctime(), flush=True)
 
     def _get_ts_name_core(self, max_rate, bg_rate):
         return 'max_rate%dkcps_bg%dcps' % (max_rate * 1e-3, bg_rate)
