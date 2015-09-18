@@ -12,6 +12,7 @@ from . import loadutils as lu
 from . import diffusion
 from . import timestamps
 from . import plot
+from . import plotter
 
 from .utils import hdf5
 from .tests import test_diffusion
