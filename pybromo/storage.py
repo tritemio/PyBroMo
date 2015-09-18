@@ -197,18 +197,23 @@ class TrajectoryStore(BaseStore):
                                    title='Emission trace of each particle',
                                    params=params)
 
-    def add_position(self, chunksize=2**19, comp_filter=default_compression,
-                     overwrite=False, params=dict(), chunkslice='bytes'):
+    def add_position(self, radial=False, chunksize=2**19, chunkslice='bytes',
+                     comp_filter=default_compression, overwrite=False,
+                     params=dict()):
         """Add the `position` array in '/trajectories'.
         """
         nparams = self.numeric_params
         num_particles = nparams['np']
 
-        return self.add_trajectory('position', shape=(num_particles, 3, 0),
+        name, ncoords, prefix = 'position', 3, 'X-Y-Z'
+        if radial:
+            name, ncoords, prefix = 'position_rz', 2, 'R-Z'
+        title = '%s position trace of each particle' % prefix
+        return self.add_trajectory(name, shape=(num_particles, ncoords, 0),
                                    overwrite=overwrite, chunksize=chunksize,
                                    comp_filter=comp_filter,
                                    atom=tables.Float32Atom(),
-                                   title='3-D position trace of each particle',
+                                   title=title,
                                    params=params)
 
 

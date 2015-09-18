@@ -402,7 +402,7 @@ class ParticlesSimulation(object):
         return store
 
     def open_store_traj(self, path='./', chunksize=2**19, chunkslice='bytes',
-                        mode='w'):
+                        mode='w', radial=False):
         """Open and setup the on-disk storage file (pytables HDF5 file).
 
         Arguments:
@@ -426,7 +426,7 @@ class ParticlesSimulation(object):
         kwargs = dict(chunksize=self.chunksize, chunkslice=chunkslice)
         self.emission_tot = self.store.add_emission_tot(**kwargs)
         self.emission = self.store.add_emission(**kwargs)
-        self.position = self.store.add_position(**kwargs)
+        self.position = self.store.add_position(radial=radial, **kwargs)
 
     def open_store_timestamp(self, path='./', chunksize=2**19,
                              chunkslice='bytes', mode='w'):
@@ -445,7 +445,7 @@ class ParticlesSimulation(object):
         self.ts_group = self.ts_store.h5file.root.timestamps
 
     def _sim_trajectories(self, time_size, start_pos, rs,
-                          total_emission=False, save_pos=False,
+                          total_emission=False, save_pos=False, radial=False,
                           wrap_func=wrap_periodic):
         """Simulate (in-memory) `time_size` steps of trajectories.
 
@@ -500,14 +500,16 @@ class ParticlesSimulation(object):
                 # Store the individual emission of current particle
                 em[i] = current_em.astype(np.float32)
             if save_pos:
-                POS.append(pos.reshape(1, 3, time_size))
+                pos_save = np.vstack((Ro, Z)) if radial else pos
+                POS.append(pos_save[np.newaxis, :, :])
             # Save last position as next starting position
             start_pos[i] = pos[:, -1:]
         return POS, em
 
     def simulate_diffusion(self, save_pos=False, total_emission=True,
-                           rs=None, seed=1, wrap_func=wrap_periodic, path='./',
-                           verbose=True, chunksize=2**19, chunkslice='bytes'):
+                           radial=False, rs=None, seed=1, path='./',
+                           wrap_func=wrap_periodic,
+                           chunksize=2**19, chunkslice='times', verbose=True):
         """Simulate Brownian motion trajectories and emission rates.
 
         This method performs the Brownian motion simulation using the current
@@ -534,7 +536,7 @@ class ParticlesSimulation(object):
         if rs is None:
             rs = np.random.RandomState(seed=seed)
         self.open_store_traj(chunksize=chunksize, chunkslice=chunkslice,
-                             path=path)
+                             radial=radial, path=path)
         # Save current random state for reproducibility
         self.traj_group._v_attrs['init_random_state'] = rs.get_state()
 
@@ -560,7 +562,7 @@ class ParticlesSimulation(object):
 
             POS, em = self._sim_trajectories(time_size, par_start_pos, rs,
                                              total_emission=total_emission,
-                                             save_pos=save_pos,
+                                             save_pos=save_pos, radial=radial,
                                              wrap_func=wrap_func)
 
             ## Append em to the permanent storage
