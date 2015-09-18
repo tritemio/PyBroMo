@@ -87,6 +87,8 @@ class MixtureSimulation:
         for k, v in params.items():
             setattr(self, k, v)
         self.E1p, self.E2p = self.E1 * 100, self.E2 * 100
+        self.em_rate_tot1k = self.em_rate_tot1 * 1e-3
+        self.em_rate_tot2k = self.em_rate_tot2 * 1e-3
         rates = em_rates_from_E_DA_mix(self.em_rate_tot1, self.em_rate_tot2,
                                        self.E1, self.E2)
         self.em_rate_d1, self.em_rate_a1 = rates[:2]
@@ -132,15 +134,16 @@ class MixtureSimulation:
         print(str(self), flush=True)
 
     def _compact_repr(self):
-        return ('_E1_{self.E1p:.0f}_D1Em{self.em_rate_d1k:.0f}k_A1Em{self.em_rate_a1k:.0f}'
-                '_E2_{self.E2p:.0f}_D2Em{self.em_rate_d2k:.0f}k_A2Em{self.em_rate_a2k:.0f}'
-                '_BgD{self.bg_rate_d}_BgA{self.bg_rate_a}'
-               ).format(self=self)
+        return ('P{self.num_pop1}_{self.num_pop2}_'
+                'D_{self.D1:.1e}_{self.D2:.1e}_'
+                'E_{self.E1p:.0f}_{self.E2p:.0f}_'
+                'EmTot_{self.em_rate_tot1k:.0f}k_{self.em_rate_tot2k:.0f}k_'
+                'BgD{self.bg_rate_d}_BgA{self.bg_rate_a}').format(self=self)
 
     @property
     def filename(self):
-        basename = self.S.store.filepath.stem.replace('pybromo', 'smFRET')
-        return "%s%s.hdf5" % (basename, self._compact_repr())
+        hash_ = self.S.store.filepath.stem.split('_')[1]
+        return "smFRET_%s_%s.hdf5" % (hash_, self._compact_repr())
 
     @property
     def filepath(self):
