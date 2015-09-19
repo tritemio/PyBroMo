@@ -594,7 +594,7 @@ class ParticlesSimulation(object):
         for ipop, (max_rate, pop) in enumerate(zip(max_rates, populations)):
             kw = dict(npop = ipop + 1, max_rate = max_rate,
                       npart = pop.stop - pop.start)
-            s.append('Pop{npop}_P{npart}_max_rate{max_rate:.0f}kcps'
+            s.append('Pop{npop}_P{npart}_max_rate{max_rate:.0f}cps'
                      .format(**kw))
         return '_'.join(s)
 
