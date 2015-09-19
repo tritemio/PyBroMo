@@ -6,3 +6,4 @@ notebooks/.ipynb_checkpoints/
 *.hdf5
 build
 pybromo.egg-info
+dist/
