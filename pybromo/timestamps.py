@@ -134,7 +134,7 @@ class TimestapSimulation:
         pop_params = (p['num_pop'], p['D_list'], p['em_rates'], p['E'])
         for p_i, (num_pop, D, em_rate, E) in enumerate(zip(*pop_params)):
             txt.append(self.txt_population.format(p_i=p_i + 1,
-                num_pop=num_pop, D=D, em_rate=em_rate, E=E * 100))
+                num_pop=num_pop, D=D, em_rate=em_rate, E=E))
 
         txt.append(self.txt_background.format(**self.params))
         return ''.join(txt)
