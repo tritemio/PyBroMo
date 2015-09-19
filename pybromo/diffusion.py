@@ -756,7 +756,7 @@ class ParticlesSimulation(object):
     def simulate_timestamps_mix(self, max_rates, populations, bg_rate,
                                 rs=None, seed=1, chunksize=2**16,
                                 comp_filter=None, overwrite=False, scale=10,
-                                path='./', t_chunksize=None):
+                                path='./', t_chunksize=None, timeslice=None):
         """Compute timestamps for a mixture of 2 populations.
 
         The results are saved to disk and accessible as pytables arrays in
@@ -782,11 +782,16 @@ class ParticlesSimulation(object):
             scale (int): `self.t_step` is multiplied by `scale` to obtain the
                 timestamps units in seconds.
             path (string): folder where to save the data.
+            timeslice (float or None): generate timestamps up until `timeslice`
+                seconds. If None, covers all the diffusion.
         """
         self.open_store_timestamp(chunksize=chunksize, path=path)
         rs = self._get_randomstate(rs, seed, self.ts_group)
         if t_chunksize is None:
             t_chunksize = self.emission.chunkshape[1]
+        timeslice_size = self.n_samples
+        if timeslice is not None:
+            timeslice_size = timeslice // self.t_step
 
         name = self._get_ts_name_mix(max_rates, populations, bg_rate,
                                      rs.get_state())
@@ -802,7 +807,7 @@ class ParticlesSimulation(object):
 
         # Load emission in chunks, and save only the final timestamps
         bg_rates = (None, bg_rate)
-        for i_start, i_end in iter_chunk_index(self.n_samples, t_chunksize):
+        for i_start, i_end in iter_chunk_index(timeslice_size, t_chunksize):
             em_chunk = self.emission[:, i_start:i_end]
 
             # Loop for each population

@@ -150,10 +150,11 @@ class MixtureSimulation:
     def filepath(self):
         return Path(self.S.store.filepath.parent, self.filename)
 
-    def run(self, rs, overwrite=True, path=None, chunksize=None):
+    def run(self, rs, overwrite=True, path=None, chunksize=None,
+            timeslice=None):
         if path is None:
             path = str(self.S.store.filepath.parent)
-        kwargs = dict(rs=rs, overwrite=overwrite, path=path)
+        kwargs = dict(rs=rs, overwrite=overwrite, path=path, timeslice=timeslice)
         if chunksize is not None:
             kwargs['chunksize'] = chunksize
         header = ' - Mixture Simulation:'
