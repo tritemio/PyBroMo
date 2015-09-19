@@ -590,12 +590,13 @@ class ParticlesSimulation(object):
                              hash_(rs_state)[:hashsize])
 
     def _get_ts_name_mix_core(self, max_rates, populations, bg_rate):
-        pop1, pop2 = populations
-        max_rate1, max_rate2 = max_rates
-        s = 'Pop1_P%d_%d_max_rate%dkcps_Pop2_P%d_%d_max_rate%dkcps_bg%dcps' % (
-            pop1.start, pop1.stop - 1, max_rate1 * 1e-3,
-            pop2.start, pop2.stop - 1, max_rate2 * 1e-3, bg_rate)
-        return s
+        s = []
+        for ipop, (max_rate, pop) in enumerate(zip(max_rates, populations)):
+            kw = dict(npop = ipop + 1, max_rate = max_rate,
+                      npart = pop.stop - pop.start)
+            s.append('Pop{npop}_P{npart}_max_rate{max_rate:.0f}kcps'
+                     .format(**kw))
+        return '_'.join(s)
 
     def _get_ts_name_mix(self, max_rates, populations, bg_rate, rs_state,
                          hashsize=4):
@@ -765,9 +766,10 @@ class ParticlesSimulation(object):
         conventional particle number (last particle index + 1).
 
         Arguments:
-            max_rate (float, cps): max emission rate for a single particle
-            populations (2-tuple of slices): slices for `self.particles` that
-                define the two populations.
+            max_rates (list): list of the peak max emission rate for each
+                population.
+            populations (list of slices): slices to `self.particles`
+                defining each population.
             bg_rate (float, cps): rate for a Poisson background process
             rs (RandomState object): random state object used as random number
                 generator. If None, use a random state initialized from seed.
@@ -777,13 +779,13 @@ class ParticlesSimulation(object):
             comp_filter (tables.Filter or None): compression filter to use
                 for the on-disk `timestamps` and `tparticles` arrays.
                 If None use default compression.
-             (bool): if True  an timestamp array with the
-                same name.
+            overwrite (bool): if False, throw an error when trying to simulate
+                an already existing timestamp array.
             scale (int): `self.t_step` is multiplied by `scale` to obtain the
                 timestamps units in seconds.
             path (string): folder where to save the data.
-            timeslice (float or None): generate timestamps up until `timeslice`
-                seconds. If None, covers all the diffusion.
+            timeslice (float or None): timestamps are simulated until
+                `timeslice` seconds. If None, simulate until `self.t_max`.
         """
         self.open_store_timestamp(chunksize=chunksize, path=path)
         rs = self._get_randomstate(rs, seed, self.ts_group)
