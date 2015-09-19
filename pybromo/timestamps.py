@@ -86,6 +86,7 @@ class MixtureSimulation:
         self.S = S
         for k, v in params.items():
             setattr(self, k, v)
+        assert self.num_pop1 + self.num_pop2 <= S.num_particles
         self.E1p, self.E2p = self.E1 * 100, self.E2 * 100
         self.em_rate_tot1k = self.em_rate_tot1 * 1e-3
         self.em_rate_tot2k = self.em_rate_tot2 * 1e-3
