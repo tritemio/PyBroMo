@@ -88,25 +88,44 @@ def populations_slices(particles, num_pop_list):
         i_prev += num_pop
     return slices
 
+
 class TimestapSimulation:
-    """Simulate timestamps for a mixture of two populations."""
+    """Simulate timestamps for a mixture of two populations.
 
-    def __init__(self, S, params):
-        self.S = S
-        self.params = params
-        assert np.sum(params['num_pop']) <= S.num_particles
+    Input attributes -> sequences with one element per population:
 
-        em_rates_d, em_rates_a = em_rates_from_E_DA_mix(params['em_rates'],
-                                                        params['E'])
-        params.update(
-            em_rates_d=em_rates_d,
-            em_rates_a=em_rates_a,
-            D_list=populations_diff_coeff(S.particles, params['num_pop']))
+    - `em_rates`, `E_values`, `num_particles`
 
-        self.bg_rates = [params['bg_rate_d'], params['bg_rate_a']]
-        self.populations = populations_slices(S.particles,
-                                              params['num_pop'])
-        self.traj_filename = S.store.filepath.name
+    Input attributes -> scalars
+
+    - `bg_rate_d`, `bg_rate_a`
+
+    Attributes computed by __init__():
+
+    - `em_rates_d`, `em_rates_a`, `D_values`, `populations`, `traj_filename`.
+
+    Attributes computed by merge_da():
+
+    - `ts`, `a_ch`, `part`, `clk_p`
+    """
+
+    def __init__(self, S, em_rates, E_values, num_particles,
+                 bg_rate_d, bg_rate_a):
+        assert np.sum(num_particles) <= S.num_particles
+
+        em_rates_d, em_rates_a = em_rates_from_E_DA_mix(em_rates, E_values)
+        D_values = populations_diff_coeff(S.particles, num_particles)
+        populations = populations_slices(S.particles, num_particles)
+
+        params = dict(S=S, em_rates=em_rates, E_values=E_values,
+                      num_particles=num_particles,
+                      bg_rate_d=bg_rate_d, bg_rate_a=bg_rate_a,
+                      em_rates_d=em_rates_d, em_rates_a=em_rates_a,
+                      D_values=D_values, populations=populations,
+                      traj_filename = S.store.filepath.name)
+
+        for k, v in params.items():
+            setattr(self, k, v)
 
     txt_header = """
         Timestamps simulation: Mixture
@@ -124,31 +143,29 @@ class TimestapSimulation:
         """
     txt_background = """
         Background:
-            Donor:              {bg_rate_d:7,} cps
-            Acceptor:           {bg_rate_a:7,} cps
+            Donor:              {self.bg_rate_d:7,} cps
+            Acceptor:           {self.bg_rate_a:7,} cps
         """
     def __str__(self):
         txt = [self.txt_header.format(self=self)]
-        p = self.params
-
-        pop_params = (p['num_pop'], p['D_list'], p['em_rates'], p['E'])
-        for p_i, (num_pop, D, em_rate, E) in enumerate(zip(*pop_params)):
+        pop_params = (self.em_rates, self.E_values, self.num_particles,
+                      self.D_values)
+        for p_i, (em_rate, E, num_pop, D) in enumerate(zip(*pop_params)):
             txt.append(self.txt_population.format(p_i=p_i + 1,
                 num_pop=num_pop, D=D, em_rate=em_rate, E=E))
 
-        txt.append(self.txt_background.format(**self.params))
+        txt.append(self.txt_background.format(self=self))
         return ''.join(txt)
 
     def summarize(self):
         print(str(self), flush=True)
 
     def _compact_repr(self):
-        p = self.params
-        s1 = 'P_' + '_'.join(str(n_p) for n_p in p['num_pop'])
-        s2 = 'D_' + '_'.join('%.1e' % D for D in p['D_list'])
-        s3 = 'E_' + '_'.join('%d' % (E * 100) for E in p['E'])
-        s4 = 'EmTot_' + '_'.join('%d' % (em * 1e-3) for em in p['em_rates'])
-        s5 = 'BgD%d_BgA%d' % (p['bg_rate_d'], p['bg_rate_a'])
+        s1 = 'P_' + '_'.join(str(n_p) for n_p in self.num_particles)
+        s2 = 'D_' + '_'.join('%.1e' % D for D in self.D_values)
+        s3 = 'E_' + '_'.join('%d' % (E * 100) for E in self.E_values)
+        s4 = 'EmTot_' + '_'.join('%d' % (em * 1e-3) for em in self.em_rates)
+        s5 = 'BgD%d_BgA%d' % (self.bg_rate_d, self.bg_rate_a)
         return '_'.join((s1, s2, s3, s4, s5))
 
     @property
@@ -162,6 +179,7 @@ class TimestapSimulation:
 
     def run(self, rs, overwrite=True, path=None, chunksize=None,
             timeslice=None):
+        """Compute timestamps for current populations."""
         if path is None:
             path = str(self.S.store.filepath.parent)
         kwargs = dict(rs=rs, overwrite=overwrite, path=path, timeslice=timeslice)
@@ -171,23 +189,25 @@ class TimestapSimulation:
         print('%s Donor timestamps - %s' % (header, ctime()), flush=True)
         self.S.simulate_timestamps_mix(
             populations = self.populations,
-            max_rates = self.params['em_rates_d'],
-            bg_rate = self.params['bg_rate_d'],
+            max_rates = self.em_rates_d,
+            bg_rate = self.bg_rate_d,
             **kwargs)
         print('%s Acceptor timestamps - %s' % (header, ctime()), flush=True)
         self.S.simulate_timestamps_mix(
             populations = self.populations,
-            max_rates = self.params['em_rates_d'],
-            bg_rate = self.params['bg_rate_d'],
+            max_rates = self.em_rates_d,
+            bg_rate = self.bg_rate_a,
             **kwargs)
         print('%s Completed. %s' % (header, ctime()), flush=True)
 
     def merge_da(self):
+        """Merge donor and acceptor timestamps, computes `ts`, `a_ch`, `part`.
+        """
         print(' - Merging D and A timestamps', flush=True)
-        name_d = self.S.timestamps_match_mix(self.max_rates_d,
+        name_d = self.S.timestamps_match_mix(self.em_rates_d,
                                              self.populations,
                                              self.bg_rate_d)[0]
-        name_a = self.S.timestamps_match_mix(self.max_rates_a,
+        name_a = self.S.timestamps_match_mix(self.em_rates_a,
                                              self.populations,
                                              self.bg_rate_a)[0]
         ts_d, ts_par_d = self.S.get_timestamps_part(name_d)
@@ -239,6 +259,7 @@ class TimestapSimulation:
         return data
 
     def save_photon_hdf5(self, identity=None, overwrite=True, path=None):
+        """Create a smFRET Photon-HDF5 file with current timestamps."""
         filepath = self.filepath
         if path is not None:
             filepath = Path(path, filepath.name)
