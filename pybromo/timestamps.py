@@ -171,14 +171,14 @@ class TimestapSimulation:
         print('%s Donor timestamps - %s' % (header, ctime()), flush=True)
         self.S.simulate_timestamps_mix(
             populations = self.populations,
-            max_rates = self.max_rates_d,
-            bg_rate = self.bg_rate_d,
+            max_rates = self.params['em_rates_d'],
+            bg_rate = self.params['bg_rate_d'],
             **kwargs)
         print('%s Acceptor timestamps - %s' % (header, ctime()), flush=True)
         self.S.simulate_timestamps_mix(
             populations = self.populations,
-            max_rates = self.max_rates_a,
-            bg_rate = self.bg_rate_a,
+            max_rates = self.params['em_rates_d'],
+            bg_rate = self.params['bg_rate_d'],
             **kwargs)
         print('%s Completed. %s' % (header, ctime()), flush=True)
 
