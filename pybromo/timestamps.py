@@ -195,7 +195,7 @@ class TimestapSimulation:
         print('%s Acceptor timestamps - %s' % (header, ctime()), flush=True)
         self.S.simulate_timestamps_mix(
             populations = self.populations,
-            max_rates = self.em_rates_d,
+            max_rates = self.em_rates_a,
             bg_rate = self.bg_rate_a,
             **kwargs)
         print('%s Completed. %s' % (header, ctime()), flush=True)
