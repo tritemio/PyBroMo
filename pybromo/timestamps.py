@@ -55,91 +55,101 @@ def em_rates_from_E_unique(em_rate_tot, E_values):
     em_rates_d, em_rates_a = em_rates_from_E_DA(em_rate_tot, E_values)
     return np.unique(np.hstack([em_rates_d, em_rates_a]))
 
-def em_rates_from_E_DA_mix(em_rate_tot1, em_rate_tot2, E_values1, E_values2):
+def em_rates_from_E_DA_mix(em_rates_tot, E_values):
     """D and A emission rates for two populations.
     """
-    em_rates_d1, em_rates_a1 = em_rates_from_E_DA(em_rate_tot1, E_values1)
-    em_rates_d2, em_rates_a2 = em_rates_from_E_DA(em_rate_tot2, E_values2)
-    return em_rates_d1, em_rates_a1, em_rates_d2, em_rates_a2
+    em_rates_d, em_rates_a = [], []
+    for em_rate_tot, E_value in zip(em_rates_tot, E_values):
+        em_rate_di, em_rate_ai = em_rates_from_E_DA(em_rate_tot, E_value)
+        em_rates_d.append(em_rate_di)
+        em_rates_a.append(em_rate_ai)
+    return em_rates_d, em_rates_a
 
-def populations_diff_coeff(particles, num_pop1, num_pop2):
+def populations_diff_coeff(particles, num_pop):
     """Diffusion coefficients of the two specified populations.
     """
     D_counts = particles.diffusion_coeff_counts
     if len(D_counts) == 1:
-        D1 = D2 = D_counts[0][0]
-    elif len(D_counts) == 2:
-        # Multiple diffusion coefficients
-        (D1, _num_pop1), (D2, _num_pop2) = D_counts
-        assert _num_pop1 == num_pop1
-        assert _num_pop2 == num_pop2
-    return D1, D2
+        D_list = [D_counts[0][0], D_counts[0][0]]
+    else:
+        D_list = []
+        for p_i, (D, counts) in zip(num_pop, D_counts):
+            D_list.append(D)
+            assert p_i == counts
+    return D_list
 
-def populations_slices(particles, num_pop1, num_pop2):
+def populations_slices(particles, num_pop_list):
     """2-tuple of slices for selection of two populations.
     """
-    return slice(0, num_pop1), slice(num_pop1, num_pop1 + num_pop2)
+    slices = []
+    i_prev = 0
+    for num_pop in num_pop_list:
+        slices.append(slice(i_prev, i_prev + num_pop))
+        i_prev += num_pop
+    return slices
 
-class MixtureSimulation:
+class TimestapSimulation:
     """Simulate timestamps for a mixture of two populations."""
+
     def __init__(self, S, params):
         self.S = S
-        for k, v in params.items():
-            setattr(self, k, v)
-        assert self.num_pop1 + self.num_pop2 <= S.num_particles
-        self.E1p, self.E2p = self.E1 * 100, self.E2 * 100
-        self.em_rate_tot1k = self.em_rate_tot1 * 1e-3
-        self.em_rate_tot2k = self.em_rate_tot2 * 1e-3
-        rates = em_rates_from_E_DA_mix(self.em_rate_tot1, self.em_rate_tot2,
-                                       self.E1, self.E2)
-        self.em_rate_d1, self.em_rate_a1 = rates[:2]
-        self.em_rate_d2, self.em_rate_a2 = rates[2:]
-        self.em_rate_d1k, self.em_rate_a1k = rates[0] * 1e-3, rates[1] * 1e-3
-        self.em_rate_d2k, self.em_rate_a2k = rates[2] * 1e-3, rates[3] * 1e-3
-        self.max_rates_d = (self.em_rate_d1, self.em_rate_d2)
-        self.max_rates_a = (self.em_rate_a1, self.em_rate_a2)
-        self.bg_rates = [self.bg_rate_a, self.bg_rate_d]
+        self.params = params
+        assert np.sum(params['num_pop']) <= S.num_particles
+
+        em_rates_d, em_rates_a = em_rates_from_E_DA_mix(params['em_rates'],
+                                                        params['E'])
+        params.update(
+            em_rates_d=em_rates_d,
+            em_rates_a=em_rates_a,
+            D_list=populations_diff_coeff(S.particles, params['num_pop']))
+
+        self.bg_rates = [params['bg_rate_d'], params['bg_rate_a']]
         self.populations = populations_slices(S.particles,
-                                              self.num_pop1, self.num_pop2)
-        self.D1, self.D2 = populations_diff_coeff(S.particles,
-                                                  self.num_pop1, self.num_pop2)
+                                              params['num_pop'])
         self.traj_filename = S.store.filepath.name
 
-    def __str__(self):
-        s = """
+    txt_header = """
         Timestamps simulation: Mixture
         ------------------------------
 
         Trajectories file:
             {self.traj_filename}
-
-        Population1:
-            # particles:        {self.num_pop1:7}
-            D                   {self.D1} m^2/s
-            Peak emission rate: {self.em_rate_tot1:,.0f} cps
-            FRET efficiency:    {self.E1:7.1%}
-
-        Population2:
-            # particles:        {self.num_pop2:7}
-            D                   {self.D2} m^2/s
-            Peak emission rate: {self.em_rate_tot2:,.0f} cps
-            FRET efficiency:    {self.E2:7.1%}
-
+        """
+    txt_population = """
+        Population{p_i}:
+            # particles:        {num_pop}
+            D                   {D} m^2/s
+            Peak emission rate: {em_rate:,.0f} cps
+            FRET efficiency:    {E:7.1%}
+        """
+    txt_background = """
         Background:
-            Donor:              {self.bg_rate_d:7,} cps
-            Acceptor:           {self.bg_rate_a:7,} cps
-        """.format(self=self)
-        return s
+            Donor:              {bg_rate_d:7,} cps
+            Acceptor:           {bg_rate_a:7,} cps
+        """
+    def __str__(self):
+        txt = [self.txt_header.format(self=self)]
+        p = self.params
+
+        pop_params = (p['num_pop'], p['D_list'], p['em_rates'], p['E'])
+        for p_i, (num_pop, D, em_rate, E) in enumerate(zip(*pop_params)):
+            txt.append(self.txt_population.format(p_i=p_i + 1,
+                num_pop=num_pop, D=D, em_rate=em_rate, E=E * 100))
+
+        txt.append(self.txt_background.format(**self.params))
+        return ''.join(txt)
 
     def summarize(self):
         print(str(self), flush=True)
 
     def _compact_repr(self):
-        return ('P{self.num_pop1}_{self.num_pop2}_'
-                'D_{self.D1:.1e}_{self.D2:.1e}_'
-                'E_{self.E1p:.0f}_{self.E2p:.0f}_'
-                'EmTot_{self.em_rate_tot1k:.0f}k_{self.em_rate_tot2k:.0f}k_'
-                'BgD{self.bg_rate_d}_BgA{self.bg_rate_a}').format(self=self)
+        p = self.params
+        s1 = 'P_' + '_'.join(str(n_p) for n_p in p['num_pop'])
+        s2 = 'D_' + '_'.join('%.1e' % D for D in p['D_list'])
+        s3 = 'E_' + '_'.join('%d' % (E * 100) for E in p['E'])
+        s4 = 'EmTot_' + '_'.join('%d' % (em * 1e-3) for em in p['em_rates'])
+        s5 = 'BgD%d_BgA%d' % (p['bg_rate_d'], p['bg_rate_a'])
+        return '_'.join((s1, s2, s3, s4, s5))
 
     @property
     def filename(self):
