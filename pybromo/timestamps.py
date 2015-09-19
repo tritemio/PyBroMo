@@ -147,7 +147,7 @@ class MixtureSimulation:
 
     @property
     def filepath(self):
-        return Path(self.filename)
+        return Path(self.S.store.filepath.parent, self.filename)
 
     def run(self, rs, overwrite=True, path=None, chunksize=None):
         if path is None:
