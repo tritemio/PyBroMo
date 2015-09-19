@@ -17,6 +17,9 @@ from builtins import range, zip, dict
 from pathlib import Path
 import tables
 
+from ._version import get_versions
+__version__ = get_versions()['version']
+
 
 # Compression filter used by default for arrays
 default_compression = tables.Filters(complevel=5, complib='blosc')
@@ -171,6 +174,7 @@ class TrajectoryStore(BaseStore):
         # Set the array parameters/attributes
         for key, value in params.items():
             store_array.set_attr(key, value)
+        store_array.set_attr('PyBroMo', __version__)
         return store_array
 
     def add_emission_tot(self, chunksize=2**19, comp_filter=default_compression,
@@ -268,6 +272,7 @@ class TimestampStore(BaseStore):
             title = 'Particle number for each timestamp')
         particles_array.set_attr('num_particles', num_particles)
         particles_array.set_attr('bg_particle', bg_particle)
+        particles_array.set_attr('PyBroMo', __version__)
         return times_array, particles_array
 
 
