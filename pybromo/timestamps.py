@@ -227,8 +227,11 @@ class MixtureSimulation:
             identity=identity)
         return data
 
-    def save_photon_hdf5(self, identity=None, overwrite=True):
+    def save_photon_hdf5(self, identity=None, overwrite=True, path=None):
+        filepath = self.filepath
+        if path is not None:
+            filepath = Path(path, filepath.name)
         self.merge_da()
         data = self._make_photon_hdf5(identity=identity)
-        phc.hdf5.save_photon_hdf5(data, h5_fname=str(self.filepath),
+        phc.hdf5.save_photon_hdf5(data, h5_fname=str(filepath),
                                   overwrite=overwrite)
