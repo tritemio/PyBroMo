@@ -31,6 +31,22 @@ def randomstate_equal(rs1, rs2):
         equal &= test
     return equal
 
+def create_diffusion_sim():
+    rs = np.random.RandomState(_SEED)
+    Du = 12.0            # um^2 / s
+    D = Du * (1e-6)**2    # m^2 / s
+    box = pbm.Box(x1=-4.e-6, x2=4.e-6, y1=-4.e-6, y2=4.e-6, z1=-6e-6, z2=6e-6)
+    psf = pbm.NumericPSF()
+    P = pbm.Particles(num_particles=100, D=D, box=box, rs=rs)
+    t_step = 0.5e-6
+    t_max = 0.1
+    S = pbm.ParticlesSimulation(t_step=t_step, t_max=t_max,
+                                particles=P, box=box, psf=psf)
+    S.simulate_diffusion(save_pos=True, total_emission=False, radial=True,
+                         rs=rs)
+    S.store.close()
+    return S.hash()[:6]
+
 def test_Particles():
     rs = np.random.RandomState(_SEED)
     box = pbm.Box(x1=-4.e-6, x2=4.e-6, y1=-4.e-6, y2=4.e-6, z1=-6e-6, z2=6e-6)
@@ -119,11 +135,31 @@ def test_diffusion_sim_core():
 
     POS, em = sim
     POS = np.concatenate(POS, axis=0)
-    x, y, z = POS[:, :, 0], POS[:, :, 1], POS[:, :, 2]
+    #x, y, z = POS[:, :, 0], POS[:, :, 1], POS[:, :, 2]
+    #r_squared = x**2 + y**2 + z**2
+
     DR = np.diff(POS, axis=2)
     dx, dy, dz = DR[:, :, 0], DR[:, :, 1], DR[:, :, 2]
-
-    r_squared = x**2 + y**2 + z**2
     dr_squared = dx**2 + dy**2 + dz**2
+
     D_fitted = dr_squared.mean() / (6 * t_max)  # Fitted diffusion coefficient
     assert np.abs(D - D_fitted) < 0.01
+
+def test_timestamps():
+    hash_ = create_diffusion_sim()
+    S = pbm.ParticlesSimulation.from_datafile(hash_, mode='a')
+
+    params = dict(
+        em_rates = (400e3,),    # Peak emission rates (cps) for each population (D+A)
+        E_values = (0.75,),     # FRET efficiency for each population
+        num_particles = (35,),  # Number of particles in each population
+        bg_rate_d = 1400,       # Poisson background rate (cps) Donor channel
+        bg_rate_a = 800,        # Poisson background rate (cps) Acceptor channel
+        )
+
+    mix_sim = pbm.TimestapSimulation(S, **params)
+    mix_sim.summarize()
+
+    rs = np.random.RandomState(_SEED)
+    mix_sim.run(rs=rs, overwrite=False)
+    mix_sim.save_photon_hdf5()
