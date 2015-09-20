@@ -136,10 +136,11 @@ class TimestapSimulation:
 
         Trajectories file:
             {self.traj_filename}
+            time slice: {self.timeslice} s
         """
     txt_population = """
         Population{p_i}:
-            # particles:        {num_pop}
+            # particles:        {num_pop} (first particle {pop.start})
             D                   {D} m^2/s
             Peak emission rate: {em_rate:,.0f} cps
             FRET efficiency:    {E:7.1%}
@@ -152,10 +153,10 @@ class TimestapSimulation:
     def __str__(self):
         txt = [self.txt_header.format(self=self)]
         pop_params = (self.em_rates, self.E_values, self.num_particles,
-                      self.D_values)
-        for p_i, (em_rate, E, num_pop, D) in enumerate(zip(*pop_params)):
+                      self.D_values, self.populations)
+        for p_i, (em_rate, E, num_pop, D, pop) in enumerate(zip(*pop_params)):
             txt.append(self.txt_population.format(p_i=p_i + 1,
-                num_pop=num_pop, D=D, em_rate=em_rate, E=E))
+                num_pop=num_pop, D=D, em_rate=em_rate, E=E, pop=pop))
 
         txt.append(self.txt_background.format(self=self))
         return ''.join(txt)
