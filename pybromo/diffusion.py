@@ -589,13 +589,17 @@ class ParticlesSimulation(object):
         return '%s_rs_%s' % (self._get_ts_name_core(max_rate, bg_rate),
                              hash_(rs_state)[:hashsize])
 
-    def _get_ts_name_mix_core(self, max_rates, populations, bg_rate):
+    def _get_ts_name_mix_core(self, max_rates, populations, bg_rate,
+                              timeslice=None):
+        if timeslice is None:
+            timeslice = self.t_max
         s = []
         for ipop, (max_rate, pop) in enumerate(zip(max_rates, populations)):
             kw = dict(npop = ipop + 1, max_rate = max_rate,
-                      npart = pop.stop - pop.start)
-            s.append('Pop{npop}_P{npart}_max_rate{max_rate:.0f}cps'
-                     .format(**kw))
+                      npart = pop.stop - pop.start, pop=pop)
+            s.append('Pop{npop}_P{npart}_Pstart{pop.start}_'
+                     'max_rate{max_rate:.0f}cps'.format(**kw))
+        s.append('t_{}s'.format(timeslice))
         return '_'.join(s)
 
     def _get_ts_name_mix(self, max_rates, populations, bg_rate, rs_state,
