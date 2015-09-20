@@ -255,7 +255,7 @@ class TimestapSimulation:
             identity = dict()
 
         description = self.__str__()
-        acquisition_duration = self.S.t_max
+        acquisition_duration = self.timeslice
         data = dict(
             acquisition_duration = round(acquisition_duration),
             description = description,
