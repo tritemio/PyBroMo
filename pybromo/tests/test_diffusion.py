@@ -88,9 +88,9 @@ def test_diffusion_sim_random_state():
     rs_postdiffusion = rs.get_state()
 
     # Test diffusion random states
-    saved_rs = S._load_group_attr('/trajectories', 'init_random_state')
+    saved_rs = S.traj_group._v_attrs['init_random_state']
     assert randomstate_equal(saved_rs, rs_prediffusion)
-    saved_rs = S._load_group_attr('/trajectories', 'last_random_state')
+    saved_rs = S.traj_group._v_attrs['last_random_state']
     assert randomstate_equal(saved_rs, rs_postdiffusion)
 
 def test_diffusion_sim_core():
