@@ -116,7 +116,8 @@ class EmissionPlotter(ScrollPlotter):
         slice_ = slice(*slice_[:2])
         assert (slice_.stop - slice_.start)//self.decimate == self.num_points
         emission = self.S.emission[:, slice_]
-        dec_shape = (emission.shape[0], emission.shape[1]//self.decimate, self.decimate)
+        dec_shape = (emission.shape[0], emission.shape[1]//self.decimate,
+                     self.decimate)
         emission = emission.reshape(*dec_shape).max(axis=-1)
 
         self.fig.canvas.restore_region(self.background)

@@ -808,7 +808,7 @@ class ParticlesSimulation(object):
         self.ts_group._v_attrs['init_random_state'] = rs.get_state()
 
         # Load emission in chunks, and save only the final timestamps
-        bg_rates = (None, bg_rate)
+        bg_rates = [None] * (len(max_rates) - 1) + [bg_rate]
         for i_start, i_end in iter_chunk_index(timeslice_size, t_chunksize):
             em_chunk = self.emission[:, i_start:i_end]
 
