@@ -92,34 +92,37 @@ def populations_slices(particles, num_pop_list):
 class TimestapSimulation:
     """Simulate timestamps for a mixture of two populations.
 
-    Input attributes -> sequences with one element per population:
+    Input attributes which are sequences with one element per population:
 
     - `em_rates`, `E_values`, `num_particles`
 
-    Input attributes -> scalars
+    Input attributes which are scalars:
 
-    - `bg_rate_d`, `bg_rate_a`
+    - `bg_rate_d`, `bg_rate_a`, `timeslice` (optional)
 
-    Attributes computed by __init__():
+    Attributes created by __init__():
 
     - `em_rates_d`, `em_rates_a`, `D_values`, `populations`, `traj_filename`.
 
-    Attributes computed by merge_da():
+    Attributes created by .merge_da():
 
     - `ts`, `a_ch`, `part`, `clk_p`
     """
 
     def __init__(self, S, em_rates, E_values, num_particles,
-                 bg_rate_d, bg_rate_a):
+                 bg_rate_d, bg_rate_a, timeslice=None):
         assert np.sum(num_particles) <= S.num_particles
+        if timeslice is None:
+            timeslice = S.t_max
+        assert timeslice <= S.t_max
 
         em_rates_d, em_rates_a = em_rates_from_E_DA_mix(em_rates, E_values)
         D_values = populations_diff_coeff(S.particles, num_particles)
         populations = populations_slices(S.particles, num_particles)
 
         params = dict(S=S, em_rates=em_rates, E_values=E_values,
-                      num_particles=num_particles,
-                      bg_rate_d=bg_rate_d, bg_rate_a=bg_rate_a,
+                      num_particles=num_particles, bg_rate_d=bg_rate_d,
+                      bg_rate_a=bg_rate_a, timeslice=timeslice,
                       em_rates_d=em_rates_d, em_rates_a=em_rates_a,
                       D_values=D_values, populations=populations,
                       traj_filename = S.store.filepath.name)
@@ -161,12 +164,15 @@ class TimestapSimulation:
         print(str(self), flush=True)
 
     def _compact_repr(self):
-        s1 = 'P_' + '_'.join(str(n_p) for n_p in self.num_particles)
+        part_seq = ('%d_s%d' % (np, pop.start)
+                    for np, pop in zip(self.num_particles, self.populations))
+        s1 = 'P_' + '_'.join(part_seq)
         s2 = 'D_' + '_'.join('%.1e' % D for D in self.D_values)
         s3 = 'E_' + '_'.join('%d' % (E * 100) for E in self.E_values)
         s4 = 'EmTot_' + '_'.join('%d' % (em * 1e-3) for em in self.em_rates)
         s5 = 'BgD%d_BgA%d' % (self.bg_rate_d, self.bg_rate_a)
-        return '_'.join((s1, s2, s3, s4, s5))
+        s6 = 't_max_%ds' % self.timeslice
+        return '_'.join((s1, s2, s3, s4, s5, s6))
 
     @property
     def filename(self):
@@ -177,12 +183,12 @@ class TimestapSimulation:
     def filepath(self):
         return Path(self.S.store.filepath.parent, self.filename)
 
-    def run(self, rs, overwrite=True, path=None, chunksize=None,
-            timeslice=None):
+    def run(self, rs, overwrite=True, path=None, chunksize=None):
         """Compute timestamps for current populations."""
         if path is None:
             path = str(self.S.store.filepath.parent)
-        kwargs = dict(rs=rs, overwrite=overwrite, path=path, timeslice=timeslice)
+        kwargs = dict(rs=rs, overwrite=overwrite, path=path,
+                      timeslice=self.timeslice)
         if chunksize is not None:
             kwargs['chunksize'] = chunksize
         header = ' - Mixture Simulation:'
