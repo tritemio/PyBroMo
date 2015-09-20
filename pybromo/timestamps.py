@@ -170,7 +170,7 @@ class TimestapSimulation:
         s1 = 'P_' + '_'.join(part_seq)
         s2 = 'D_' + '_'.join('%.1e' % D for D in self.D_values)
         s3 = 'E_' + '_'.join('%d' % (E * 100) for E in self.E_values)
-        s4 = 'EmTot_' + '_'.join('%d' % (em * 1e-3) for em in self.em_rates)
+        s4 = 'EmTot_' + '_'.join('%dk' % (em * 1e-3) for em in self.em_rates)
         s5 = 'BgD%d_BgA%d' % (self.bg_rate_d, self.bg_rate_a)
         s6 = 't_max_%ds' % self.timeslice
         return '_'.join((s1, s2, s3, s4, s5, s6))
