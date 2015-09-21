@@ -184,12 +184,13 @@ class TimestapSimulation:
     def filepath(self):
         return Path(self.S.store.filepath.parent, self.filename)
 
-    def run(self, rs, overwrite=True, path=None, chunksize=None):
+    def run(self, rs, overwrite=True, skip_existing=False, path=None,
+            chunksize=None):
         """Compute timestamps for current populations."""
         if path is None:
             path = str(self.S.store.filepath.parent)
         kwargs = dict(rs=rs, overwrite=overwrite, path=path,
-                      timeslice=self.timeslice)
+                      timeslice=self.timeslice, skip_existing=skip_existing)
         if chunksize is not None:
             kwargs['chunksize'] = chunksize
         header = ' - Mixture Simulation:'

@@ -29,6 +29,11 @@ default_compression = tables.Filters(complevel=5, complib='blosc')
 def current_time():
     return time.strftime("%Y-%m-%d %H:%M:%S")
 
+
+class ExistingArrayError(Exception):
+    pass
+
+
 class BaseStore(object):
 
     @staticmethod
@@ -257,7 +262,8 @@ class TimestampStore(BaseStore):
                 self.h5file.remove_node('/timestamps', name=name)
                 self.h5file.remove_node('/timestamps', name=name + '_par')
             else:
-                raise ValueError('Timestamp array already exist (%s)' % name)
+                msg = 'Timestamp array already exist (%s)' % name
+                raise ExistingArrayError(msg)
 
         times_array = self.h5file.create_earray(
             '/timestamps', name, atom=tables.Int64Atom(),

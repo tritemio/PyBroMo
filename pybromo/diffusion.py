@@ -21,7 +21,7 @@ from time import ctime
 import numpy as np
 from numpy import array, sqrt
 
-from .storage import TrajectoryStore, TimestampStore
+from .storage import TrajectoryStore, TimestampStore, ExistingArrayError
 from .iter_chunks import iter_chunksize, iter_chunk_index
 from .psflib import NumericPSF
 
@@ -760,7 +760,8 @@ class ParticlesSimulation(object):
 
     def simulate_timestamps_mix(self, max_rates, populations, bg_rate,
                                 rs=None, seed=1, chunksize=2**16,
-                                comp_filter=None, overwrite=False, scale=10,
+                                comp_filter=None, overwrite=False,
+                                skip_existing=False, scale=10,
                                 path='./', t_chunksize=None, timeslice=None):
         """Compute timestamps for a mixture of 2 populations.
 
@@ -783,8 +784,11 @@ class ParticlesSimulation(object):
             comp_filter (tables.Filter or None): compression filter to use
                 for the on-disk `timestamps` and `tparticles` arrays.
                 If None use default compression.
-            overwrite (bool): if False, throw an error when trying to simulate
-                an already existing timestamp array.
+            overwrite (bool): if True, overwrite any pre-existing timestamps
+                array. If False, never overwrite. The outcome of simulating an
+                existing array is controlled by `skip_existing` flag.
+            skip_existing (bool): if True, skip simulation if the same
+                timestamps array is already present.
             scale (int): `self.t_step` is multiplied by `scale` to obtain the
                 timestamps units in seconds.
             path (string): folder where to save the data.
@@ -808,7 +812,16 @@ class ParticlesSimulation(object):
                   overwrite=overwrite, chunksize=chunksize)
         if comp_filter is not None:
             kw.update(comp_filter=comp_filter)
-        self._timestamps, self._tparticles = self.ts_store.add_timestamps(**kw)
+        try:
+            self._timestamps, self._tparticles = (self.ts_store
+                                                  .add_timestamps(**kw))
+        except ExistingArrayError as e:
+            if skip_existing:
+                print(' - Skipping already present timestamps array.')
+                return
+            else:
+                raise e
+
         self.ts_group._v_attrs['init_random_state'] = rs.get_state()
 
         # Load emission in chunks, and save only the final timestamps

@@ -7,7 +7,7 @@ Running the tests requires `py.test`.
 from __future__ import division
 from builtins import range, zip
 
-#import pytest
+import pytest
 import numpy as np
 
 import pybromo as pbm
@@ -145,7 +145,41 @@ def test_diffusion_sim_core():
     D_fitted = dr_squared.mean() / (6 * t_max)  # Fitted diffusion coefficient
     assert np.abs(D - D_fitted) < 0.01
 
-def test_timestamps():
+
+def test_simulate_timestamps():
+    hash_ = create_diffusion_sim()
+    S = pbm.ParticlesSimulation.from_datafile(hash_, mode='w')
+
+    rs = np.random.RandomState(_SEED)
+    kw = dict(max_rates=(400e3,), populations=(slice(0, 35),), bg_rate=1000,
+              rs=rs)
+    S.simulate_timestamps_mix(**kw)
+
+    # The following two cases should not throw an error
+    kw.update(overwrite=True, skip_existing=True,
+              rs=np.random.RandomState(_SEED))
+    S.simulate_timestamps_mix(**kw)
+    kw.update(overwrite=True, skip_existing=False,
+              rs=np.random.RandomState(_SEED))
+    S.simulate_timestamps_mix(**kw)
+
+    # This should still pass
+    kw.update(overwrite=False, skip_existing=True,
+              rs=np.random.RandomState(_SEED))
+    S.simulate_timestamps_mix(**kw)
+
+    # This shoudl throw an ExistingArrayError
+    kw.update(overwrite=False, skip_existing=False,
+              rs=np.random.RandomState(_SEED))
+    with pytest.raises(pbm.storage.ExistingArrayError):
+        S.simulate_timestamps_mix(**kw)
+
+    # But with a different initial random state shoud succeede
+    kw.pop('rs')
+    S.simulate_timestamps_mix(**kw)
+    S.store.close()
+
+def test_TimestampSimulation():
     hash_ = create_diffusion_sim()
     S = pbm.ParticlesSimulation.from_datafile(hash_, mode='a')
 
