@@ -65,17 +65,17 @@ def em_rates_from_E_DA_mix(em_rates_tot, E_values):
         em_rates_a.append(em_rate_ai)
     return em_rates_d, em_rates_a
 
-def populations_diff_coeff(particles, num_pop):
+def populations_diff_coeff(particles, populations):
     """Diffusion coefficients of the two specified populations.
     """
     D_counts = particles.diffusion_coeff_counts
     if len(D_counts) == 1:
-        D_list = [D_counts[0][0], D_counts[0][0]]
-    else:
-        D_list = []
-        for p_i, (D, counts) in zip(num_pop, D_counts):
-            D_list.append(D)
-            assert p_i == counts
+        D_counts = [D_counts[0]] * len(populations)
+
+    D_list = []
+    for pop, (D, counts) in zip(populations, D_counts):
+        D_list.append(D)
+        assert (pop.stop - pop.start) == counts
     return D_list
 
 def populations_slices(particles, num_pop_list):
@@ -117,8 +117,10 @@ class TimestapSimulation:
         assert timeslice <= S.t_max
 
         em_rates_d, em_rates_a = em_rates_from_E_DA_mix(em_rates, E_values)
-        D_values = populations_diff_coeff(S.particles, num_particles)
         populations = populations_slices(S.particles, num_particles)
+        D_values = populations_diff_coeff(S.particles, populations)
+        assert (len(em_rates) == len(E_values) == len(num_particles) ==
+                len(populations) == len(D_values))
 
         params = dict(S=S, em_rates=em_rates, E_values=E_values,
                       num_particles=num_particles, bg_rate_d=bg_rate_d,
