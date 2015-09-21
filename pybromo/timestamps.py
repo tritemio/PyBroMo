@@ -196,7 +196,7 @@ class TimestapSimulation:
         if chunksize is not None:
             kwargs['chunksize'] = chunksize
         header = ' - Mixture Simulation:'
-        print('%s Donor timestamps - %s' % (header, ctime()), flush=True)
+        print('%s Donor timestamps -    %s' % (header, ctime()), flush=True)
         self.S.simulate_timestamps_mix(
             populations = self.populations,
             max_rates = self.em_rates_d,
