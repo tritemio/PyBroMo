@@ -21,6 +21,9 @@ from time import ctime
 import numpy as np
 from numpy import array, sqrt
 
+from ._version import get_versions
+__version__ = get_versions()['version']
+
 from .storage import TrajectoryStore, TimestampStore, ExistingArrayError
 from .iter_chunks import iter_chunksize, iter_chunk_index
 from .psflib import NumericPSF
@@ -746,6 +749,7 @@ class ParticlesSimulation(object):
 
         self.ts_group._v_attrs['init_random_state'] = rs.get_state()
         self._timestamps.attrs['init_random_state'] = rs.get_state()
+        self._timestamps.attrs['PyBroMo'] = __version__
 
         # Load emission in chunks, and save only the final timestamps
         bg_rates = [None] * (len(max_rates) - 1) + [bg_rate]
