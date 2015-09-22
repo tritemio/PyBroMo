@@ -238,7 +238,14 @@ class ParticlesSimulation(object):
         return S
 
     @staticmethod
-    def _get_randomstate(rs, seed, group):
+    def _get_group_randomstate(rs, seed, group):
+        """Return a RandomState, equal to the input unless rs is None.
+
+        When rs is None, try to get the random state from the
+        'last_random_state' attribute in `group`. When not available,
+        use `seed` to generate a random state. When seed is None the returned
+        random state will have a random seed.
+        """
         if rs is None:
             rs = np.random.RandomState(seed=seed)
             # Try to set the random state from the last session to preserve
@@ -309,23 +316,23 @@ class ParticlesSimulation(object):
                      self.psf.hash()]
         return hashlib.md5(repr(hash_list).encode()).hexdigest()
 
-    def compact_name_core(self, hashdigits=6, t_max=False):
+    def compact_name_core(self, hashsize=6, t_max=False):
         """Compact representation of simulation params (no ID, EID and t_max)
         """
         Moles = self.concentration()
         name = "%s_%dpM_step%.1fus" % (
             self.particles.short_repr(), Moles * 1e12, self.t_step * 1e6)
-        if hashdigits > 0:
-            name = self.hash()[:hashdigits] + '_' + name
+        if hashsize > 0:
+            name = self.hash()[:hashsize] + '_' + name
         if t_max:
             name += "_t_max%.1fs" % self.t_max
         return name
 
-    def compact_name(self, hashdigits=6):
+    def compact_name(self, hashsize=6):
         """Compact representation of all simulation parameters
         """
         # this can be made more robust for ID > 9 (double digit)
-        s = self.compact_name_core(hashdigits, t_max=True)
+        s = self.compact_name_core(hashsize, t_max=True)
         s += "_ID%d-%d" % (self.ID, self.EID)
         return s
 
@@ -603,10 +610,10 @@ class ParticlesSimulation(object):
         s.append('t_{}s'.format(timeslice))
         return '_'.join(s)
 
-    def _get_ts_name_mix(self, max_rates, populations, bg_rate, rs_state,
-                         hashsize=4):
+    def _get_ts_name_mix(self, max_rates, populations, bg_rate, rs,
+                         hashsize=6):
         s = self._get_ts_name_mix_core(max_rates, populations, bg_rate)
-        return '%s_rs_%s' % (s, hash_(rs_state)[:hashsize])
+        return '%s_rs_%s' % (s, hash_(rs.get_state())[:hashsize])
 
     @property
     def timestamp_names(self):
@@ -800,15 +807,14 @@ class ParticlesSimulation(object):
                 `timeslice` seconds. If None, simulate until `self.t_max`.
         """
         self.open_store_timestamp(chunksize=chunksize, path=path)
-        rs = self._get_randomstate(rs, seed, self.ts_group)
+        rs = self._get_group_randomstate(rs, seed, self.ts_group)
         if t_chunksize is None:
             t_chunksize = self.emission.chunkshape[1]
         timeslice_size = self.n_samples
         if timeslice is not None:
             timeslice_size = timeslice // self.t_step
 
-        name = self._get_ts_name_mix(max_rates, populations, bg_rate,
-                                     rs.get_state())
+        name = self._get_ts_name_mix(max_rates, populations, bg_rate, rs=rs)
         kw = dict(name=name, clk_p=self.t_step / scale,
                   max_rate=max_rates, bg_rate=bg_rate, populations=populations,
                   num_particles=self.num_particles,
