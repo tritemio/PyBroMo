@@ -589,13 +589,6 @@ class ParticlesSimulation(object):
         self.store.h5file.flush()
         print('\n- End trajectories simulation - %s' % ctime(), flush=True)
 
-    def _get_ts_name_core(self, max_rate, bg_rate):
-        return 'max_rate%dkcps_bg%dcps' % (max_rate * 1e-3, bg_rate)
-
-    def _get_ts_name(self, max_rate, bg_rate, rs_state, hashsize=4):
-        return '%s_rs_%s' % (self._get_ts_name_core(max_rate, bg_rate),
-                             hash_(rs_state)[:hashsize])
-
     def _get_ts_name_mix_core(self, max_rates, populations, bg_rate,
                               timeslice=None):
         if timeslice is None:
@@ -630,39 +623,6 @@ class ParticlesSimulation(object):
     def timestamps_match_mix(self, max_rates, populations, bg_rate):
         pattern = self._get_ts_name_mix_core(max_rates, populations, bg_rate)
         return self.timestamps_match_pattern(pattern)
-
-    def get_timestamps_name(self, max_rate=None, bg_rate=None, hash_=''):
-        """Return name of the matching timestamps array.
-        """
-        if len(hash_) > 0:
-            pattern = hash_
-        else:
-            assert max_rate is not None and bg_rate is not None
-            pattern = self._get_ts_name_core(max_rate, bg_rate)
-            pattern += '_rs_%s' % hash_
-        matches = [n for n in self.timestamp_names if pattern in n]
-        if len(matches) == 0:
-            raise ValueError('No timestamps matching.')
-        elif len(matches) > 1:
-            raise ValueError('Multiple matches, try specifying `hash_`.')
-        return matches[0]
-
-    def get_timestamps_part(self, name):
-        """Return matching (timestamps, particles) pytables arrays.
-        """
-        par_name = name + '_par'
-        timestamps = self.ts_store.h5file.get_node('/timestamps', name)
-        particles = self.ts_store.h5file.get_node('/timestamps', par_name)
-        return timestamps, particles
-
-    def get_timestamps(self, max_rate=None, bg_rate=None, hash_=''):
-        """Return matching (timestamps, particles) pytables arrays.
-        """
-        name = self.get_timestamps_name(max_rate, bg_rate, hash_)
-        par_name = name + '_par'
-        timestamps = self.ts_store.h5file.get_node('/timestamps', name)
-        particles = self.ts_store.h5file.get_node('/timestamps', par_name)
-        return timestamps, particles
 
     def _sim_timestamps(self, max_rate, bg_rate, emission, i_start, rs,
                         ip_start=0, scale=10, sort=True):
@@ -711,63 +671,6 @@ class ParticlesSimulation(object):
             par_index_chunk = par_index_chunk[index_sort]
 
         return times_chunk, par_index_chunk
-
-    def simulate_timestamps(self, max_rate=1, bg_rate=0, rs=None, seed=1,
-                            chunksize=2**16, comp_filter=None,
-                            overwrite=False, scale=10, path='./',
-                            t_chunksize=None):
-        """Compute timestamps and particles arrays storing results to disk.
-
-        The results are accessible as pytables arrays in `.timestamps` and
-        `.tparticles`. The background generated timestamps are assigned a
-        conventional particle number (last particle index + 1).
-
-        Arguments:
-            max_rate (float, cps): max emission rate for a single particle
-            bg_rate (float, cps): rate for a Poisson background process
-            rs (RandomState object): random state object used as random number
-                generator. If None, use a random state initialized from seed.
-            seed (uint): when `rs` is None, `seed` is used to initialize the
-                random state, otherwise is ignored.
-            chunksize (int): chunk size used for the on-disk timestamp array
-            comp_filter (tables.Filter or None): compression filter to use
-                for the on-disk `timestamps` and `tparticles` arrays.
-                If None use default compression.
-             (bool): if True  an timestamp array with the
-                same name.
-            scale (int): `self.t_step` is multiplied by `scale` to obtain the
-                timestamps units in seconds.
-            path (string): folder where to save the data.
-        """
-        self.open_store_timestamp(chunksize=chunksize, path=path)
-        rs = self._get_randomstate(rs, seed, self.ts_group)
-        if t_chunksize is None:
-            t_chunksize = self.emission.chunkshape[1]
-
-        name = self._get_ts_name(max_rate, bg_rate, rs.get_state())
-        kw = dict(name=name, clk_p=self.t_step / scale,
-                  max_rate=max_rate, bg_rate=bg_rate,
-                  num_particles=self.num_particles,
-                  bg_particle=self.num_particles,
-                  overwrite=overwrite, chunksize=chunksize)
-        if comp_filter is not None:
-            kw.update(comp_filter=comp_filter)
-        self._timestamps, self._tparticles = self.ts_store.add_timestamps(**kw)
-        self.ts_group._v_attrs['init_random_state'] = rs.get_state()
-
-        # Load emission in chunks, and save only the final timestamps
-        for i_start, i_end in iter_chunk_index(self.n_samples, t_chunksize):
-            em_chunk = self.emission[:, i_start:i_end]
-            times_chunk_s, par_index_chunk_s = self._sim_timestamps(
-                max_rate, bg_rate, em_chunk, i_start, rs=rs, scale=scale)
-
-            # Save sorted timestamps (suffix '_s') and corresponding particles
-            self._timestamps.append(times_chunk_s)
-            self._tparticles.append(par_index_chunk_s)
-
-        # Save current random state so it can be resumed in the next session
-        self.ts_group._v_attrs['last_random_state'] = rs.get_state()
-        self.ts_store.h5file.flush()
 
     def simulate_timestamps_mix(self, max_rates, populations, bg_rate,
                                 rs=None, seed=1, chunksize=2**16,
