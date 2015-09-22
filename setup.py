@@ -9,8 +9,9 @@ PyBroMo
 ==========
 
 A brownian motion and timestamps/lifetimes simulator for freely diffusing
-fluorescent particles (or dyes) under confocal excitation. If can be used to
-accurately simulate confocal single-molecule FRET experiments.
+fluorescent particles (or dyes) under confocal excitation. It can be used to
+accurately simulate confocal single-molecule FRET experiments with or
+without lifetime information.
 
 """
 
@@ -22,7 +23,7 @@ setup(name = project_name,
       url = 'https://github.com/tritemio/PyBroMo',
       download_url = 'https://github.com/tritemio/PyBroMo',
       install_requires = ['numpy', 'setuptools', 'tables', 'matplotlib',
-                          'future'],
+                          'future', 'phconvert'],
       license = 'GPLv2',
       description = ('Simulator for confocal single-molecule fluorescence '
                      'experiments.'),
@@ -32,6 +33,7 @@ setup(name = project_name,
                    'Operating System :: OS Independent',
                    'Programming Language :: Python',
                    'Programming Language :: Python :: 2.7',
+                   'Programming Language :: Python :: 3',
                    'Programming Language :: Python :: 3.4',
                    'Topic :: Scientific/Engineering',
                    ],
