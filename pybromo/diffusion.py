@@ -624,6 +624,15 @@ class ParticlesSimulation(object):
         pattern = self._get_ts_name_mix_core(max_rates, populations, bg_rate)
         return self.timestamps_match_pattern(pattern)
 
+    def get_timestamps_part(self, name):
+        """Return matching (timestamps, particles) pytables arrays.
+        """
+        par_name = name + '_par'
+        timestamps = self.ts_store.h5file.get_node('/timestamps', name)
+        particles = self.ts_store.h5file.get_node('/timestamps', par_name)
+        return timestamps, particles
+
+
     def _sim_timestamps(self, max_rate, bg_rate, emission, i_start, rs,
                         ip_start=0, scale=10, sort=True):
         """Simulate timestamps from emission trajectories.
