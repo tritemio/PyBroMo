@@ -214,12 +214,18 @@ class TimestapSimulation:
         """Merge donor and acceptor timestamps, computes `ts`, `a_ch`, `part`.
         """
         print(' - Merging D and A timestamps', flush=True)
-        name_d = self.S.timestamps_match_mix(self.em_rates_d,
-                                             self.populations,
-                                             self.bg_rate_d)[0]
-        name_a = self.S.timestamps_match_mix(self.em_rates_a,
-                                             self.populations,
-                                             self.bg_rate_a)[0]
+        names_d = self.S.timestamps_match_mix(self.em_rates_d,
+                                              self.populations,
+                                              self.bg_rate_d)
+        assert len(names_d) == 1
+        name_d = names_d[0]
+
+        names_a = self.S.timestamps_match_mix(self.em_rates_a,
+                                              self.populations,
+                                              self.bg_rate_a)
+        assert (len(names_a)) == 1
+        name_a = names_a[0]
+
         ts_d, ts_par_d = self.S.get_timestamps_part(name_d)
         ts_a, ts_par_a = self.S.get_timestamps_part(name_a)
         ts, a_ch, part = merge_da(ts_d, ts_par_d, ts_a, ts_par_a)
