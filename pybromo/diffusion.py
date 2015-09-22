@@ -658,7 +658,7 @@ class ParticlesSimulation(object):
         return timestamps, particles
 
     def _sim_timestamps(self, max_rate, bg_rate, emission, i_start, rs,
-                        ip_start=0, scale=10, max_counts=4, sort=True):
+                        ip_start=0, scale=10, sort=True):
         """Simulate timestamps from emission trajectories.
 
         Uses attributes: `.t_step`.
@@ -672,6 +672,9 @@ class ParticlesSimulation(object):
         if bg_rate is not None:
             nrows += 1
         assert counts_chunk.shape == (nrows, emission.shape[1])
+        max_counts = counts_chunk.max()
+        if max_counts == 0:
+            return np.array([], dtype=np.int64), np.array([], dtype=np.int64)
 
         ts_range = (np.arange(counts_chunk.shape[1]) + i_start) * scale
 
