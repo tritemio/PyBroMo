@@ -731,7 +731,7 @@ class ParticlesSimulation(object):
 
         name = self._get_ts_name_mix(max_rates, populations, bg_rate, rs=rs)
         kw = dict(name=name, clk_p=self.t_step / scale,
-                  max_rate=max_rates, bg_rate=bg_rate, populations=populations,
+                  max_rates=max_rates, bg_rate=bg_rate, populations=populations,
                   num_particles=self.num_particles,
                   bg_particle=self.num_particles,
                   overwrite=overwrite, chunksize=chunksize)

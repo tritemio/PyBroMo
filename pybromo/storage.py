@@ -253,7 +253,7 @@ class TimestampStore(BaseStore):
                 self.h5file.create_group('/', 'timestamps',
                                          'Simulated timestamps')
 
-    def add_timestamps(self, name, clk_p, max_rate, bg_rate,
+    def add_timestamps(self, name, clk_p, max_rates, bg_rate,
                        num_particles, bg_particle, populations=None,
                        overwrite=False, chunksize=2**16,
                        comp_filter=default_compression):
@@ -272,7 +272,7 @@ class TimestampStore(BaseStore):
             filters = comp_filter,
             title = 'Simulated photon timestamps')
         times_array.set_attr('clk_p', clk_p)
-        times_array.set_attr('max_rate', max_rate)
+        times_array.set_attr('max_rates', max_rates)
         times_array.set_attr('bg_rate', bg_rate)
         times_array.set_attr('populations', populations)
         times_array.set_attr('PyBroMo', __version__)
