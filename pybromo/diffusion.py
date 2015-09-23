@@ -611,15 +611,6 @@ class ParticlesSimulation(object):
         s = self._get_ts_name_mix_core(max_rates, populations, bg_rate)
         return '%s_rs_%s' % (s, hash_(rs.get_state())[:hashsize])
 
-    @property
-    def timestamp_names(self):
-        names = []
-        for node in self.ts_group._f_list_nodes():
-            if node.name.endswith('_par'):
-                continue
-            names.append(node.name)
-        return names
-
     def timestamps_match_pattern(self, pattern):
         return [t for t in self.timestamp_names if pattern in t]
 
@@ -638,6 +629,14 @@ class ParticlesSimulation(object):
         particles = self.ts_store.h5file.get_node('/timestamps', par_name)
         return timestamps, particles
 
+    @property
+    def timestamp_names(self):
+        names = []
+        for node in self.ts_group._f_list_nodes():
+            if node.name.endswith('_par'):
+                continue
+            names.append(node.name)
+        return names
 
     def _sim_timestamps(self, max_rate, bg_rate, emission, i_start, rs,
                         ip_start=0, scale=10, sort=True):
@@ -785,6 +784,7 @@ class ParticlesSimulation(object):
 
         # Save current random state so it can be resumed in the next session
         self.ts_group._v_attrs['last_random_state'] = rs.get_state()
+        self._timestamps.attrs['last_random_state'] = rs.get_state()
         self.ts_store.h5file.flush()
 
 

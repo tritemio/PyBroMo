@@ -213,15 +213,23 @@ class TimestapSimulation:
         if chunksize is not None:
             kwargs['chunksize'] = chunksize
         header = ' - Mixture Simulation:'
+
+        # Donor timestamps hash is from the input RandomState
+        self.hash_d = hash_(rs.get_state())[:6]   # needed by merge_da()
         print('%s Donor timestamps -    %s' % (header, ctime()), flush=True)
-        self.hash_d = hash_(rs.get_state())[:6]
         self.S.simulate_timestamps_mix(
             populations = self.populations,
             max_rates = self.em_rates_d,
             bg_rate = self.bg_rate_d,
             **kwargs)
+
+        # Acceptor timestamps hash is from 'last_random_state' attribute
+        # of the donor timestamps. This allows deterministic generation of
+        # donor + acceptor timestamps given the input random state.
+        ts_d, _ = self.S.get_timestamps_part(self.name_timestamps_d)
+        rs.set_state(ts_d.attrs['last_random_state'])
+        self.hash_a = hash_(rs.get_state())[:6]   # needed by merge_da()
         print('%s Acceptor timestamps - %s' % (header, ctime()), flush=True)
-        self.hash_a = hash_(rs.get_state())[:6]
         self.S.simulate_timestamps_mix(
             populations = self.populations,
             max_rates = self.em_rates_a,
@@ -229,26 +237,27 @@ class TimestapSimulation:
             **kwargs)
         print('%s Completed. %s' % (header, ctime()), flush=True)
 
+    @property
+    def name_timestamps_d(self):
+        names_d = self.S.timestamps_match_mix(self.em_rates_d, self.populations,
+                                              self.bg_rate_d, self.hash_d)
+        assert len(names_d) == 1
+        return names_d[0]
+
+    @property
+    def name_timestamps_a(self):
+        names_a = self.S.timestamps_match_mix(self.em_rates_a, self.populations,
+                                              self.bg_rate_a, self.hash_a)
+        assert len(names_a) == 1
+        return names_a[0]
+
+
     def merge_da(self):
         """Merge donor and acceptor timestamps, computes `ts`, `a_ch`, `part`.
         """
         print(' - Merging D and A timestamps', flush=True)
-        names_d = self.S.timestamps_match_mix(self.em_rates_d,
-                                              self.populations,
-                                              self.bg_rate_d,
-                                              self.hash_d)
-        assert len(names_d) == 1
-        name_d = names_d[0]
-
-        names_a = self.S.timestamps_match_mix(self.em_rates_a,
-                                              self.populations,
-                                              self.bg_rate_a,
-                                              self.hash_a)
-        assert (len(names_a)) == 1
-        name_a = names_a[0]
-
-        ts_d, ts_par_d = self.S.get_timestamps_part(name_d)
-        ts_a, ts_par_a = self.S.get_timestamps_part(name_a)
+        ts_d, ts_par_d = self.S.get_timestamps_part(self.name_timestamps_d)
+        ts_a, ts_par_a = self.S.get_timestamps_part(self.name_timestamps_a)
         ts, a_ch, part = merge_da(ts_d, ts_par_d, ts_a, ts_par_a)
         assert a_ch.sum() == ts_a.shape[0]
         assert (-a_ch).sum() == ts_d.shape[0]
