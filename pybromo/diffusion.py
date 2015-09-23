@@ -623,8 +623,11 @@ class ParticlesSimulation(object):
     def timestamps_match_pattern(self, pattern):
         return [t for t in self.timestamp_names if pattern in t]
 
-    def timestamps_match_mix(self, max_rates, populations, bg_rate):
+    def timestamps_match_mix(self, max_rates, populations, bg_rate,
+                             hash_=None):
         pattern = self._get_ts_name_mix_core(max_rates, populations, bg_rate)
+        if hash_ is not None:
+            pattern = '_'.join([pattern, 'rs', hash_])
         return self.timestamps_match_pattern(pattern)
 
     def get_timestamps_part(self, name):

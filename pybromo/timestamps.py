@@ -17,6 +17,8 @@ import phconvert as phc
 from ._version import get_versions
 __version__ = get_versions()['version']
 
+from .diffusion import hash_
+
 
 def merge_da(ts_d, ts_par_d, ts_a, ts_par_a):
     """Merge donor and acceptor timestamps and particle arrays.
@@ -97,17 +99,27 @@ def populations_slices(particles, num_pop_list):
 class TimestapSimulation:
     """Simulate timestamps for a mixture of two populations.
 
-    Input attributes which are sequences with one element per population:
+    Attributes set by input arguments:
+
+    1. Sequences with one element per population:
 
     - `em_rates`, `E_values`, `num_particles`
 
-    Input attributes which are scalars:
+    2. Scalars (mandatory):
 
-    - `bg_rate_d`, `bg_rate_a`, `timeslice` (optional)
+    - `bg_rate_d`, `bg_rate_a`
+
+    3. Scalars (optional)::
+
+    - `timeslice`
 
     Attributes created by __init__():
 
     - `em_rates_d`, `em_rates_a`, `D_values`, `populations`, `traj_filename`.
+
+    Attributes created by .rum():
+
+    - `hash_d`, `hash_a`
 
     Attributes created by .merge_da():
 
@@ -202,12 +214,14 @@ class TimestapSimulation:
             kwargs['chunksize'] = chunksize
         header = ' - Mixture Simulation:'
         print('%s Donor timestamps -    %s' % (header, ctime()), flush=True)
+        self.hash_d = hash_(rs.get_state())[:6]
         self.S.simulate_timestamps_mix(
             populations = self.populations,
             max_rates = self.em_rates_d,
             bg_rate = self.bg_rate_d,
             **kwargs)
         print('%s Acceptor timestamps - %s' % (header, ctime()), flush=True)
+        self.hash_a = hash_(rs.get_state())[:6]
         self.S.simulate_timestamps_mix(
             populations = self.populations,
             max_rates = self.em_rates_a,
@@ -221,13 +235,15 @@ class TimestapSimulation:
         print(' - Merging D and A timestamps', flush=True)
         names_d = self.S.timestamps_match_mix(self.em_rates_d,
                                               self.populations,
-                                              self.bg_rate_d)
+                                              self.bg_rate_d,
+                                              self.hash_d)
         assert len(names_d) == 1
         name_d = names_d[0]
 
         names_a = self.S.timestamps_match_mix(self.em_rates_a,
                                               self.populations,
-                                              self.bg_rate_a)
+                                              self.bg_rate_a,
+                                              self.hash_a)
         assert (len(names_a)) == 1
         name_a = names_a[0]
 
