@@ -858,16 +858,24 @@ class ParticlesSimulation(object):
         self._timestamps.attrs['PyBroMo'] = __version__
         self._timestamps.attrs['Diffusion'] = 1
 
+        print('- Start trajectories simulation - %s' % ctime(), flush=True)
         par_start_pos = self.particles.positions
 
         # Load emission in chunks, and save only the final timestamps
         bg_rates = [None] * (len(max_rates) - 1) + [bg_rate]
+        prev_time = 0
         for i_start, i_end in iter_chunk_index(timeslice_size, t_chunksize):
+
+            curr_time = np.around(i_start * self.t_step, decimals=1)
+            if curr_time > prev_time:
+                print(' %.1fs' % curr_time, end='', flush=True)
+                prev_time = curr_time
+
             _, em_chunk = self._sim_trajectories(t_chunksize, par_start_pos,
                                                  rs,
                                                  total_emission=False,
                                                  save_pos=False, radial=False,
-                                                 wrap_func=wrap_mirror)
+                                                 wrap_func=wrap_periodic)
 
             # Loop for each population
             ts_chunk_pop_list, par_index_chunk_pop_list = [], []
@@ -897,6 +905,7 @@ class ParticlesSimulation(object):
         self.ts_group._v_attrs['last_random_state'] = rs.get_state()
         self._timestamps.attrs['last_random_state'] = rs.get_state()
         self.ts_store.h5file.flush()
+        print('\n- End trajectories simulation - %s' % ctime(), flush=True)
 
 def sim_timetrace(emission, max_rate, t_step):
     """Draw random emitted photons from Poisson(emission_rates).
