@@ -68,7 +68,8 @@ class BaseStore(object):
         if isinstance(datafile, Path):
             self.filepath = datafile
         else:
-            assert Path(path).exists()
+            if not Path(path).exists():
+                raise ValueError('Path "%s" does not exists.' % path)
             self.filepath = Path(path, datafile)
         self.h5file = tables.open_file(str(self.filepath), mode=mode)
         self.filename = str(self.filepath)
