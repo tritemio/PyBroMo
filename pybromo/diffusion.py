@@ -135,6 +135,12 @@ class Particles(object):
         return equal.all()
 
     @property
+    def positions(self):
+        """Start positions for all the particles. Shape (N, 3, 1)."""
+        return (np.vstack([p.r0 for p in self.particles])
+                         .reshape(len(self), 3, 1))
+
+    @property
     def diffusion_coeff(self):
         return np.array([par.D for par in self])
 
@@ -562,9 +568,7 @@ class ParticlesSimulation(object):
         t_chunk_size = self.emission.chunkshape[1]
         chunk_duration = t_chunk_size * self.t_step
 
-        par_start_pos = [p.r0 for p in self.particles]
-        par_start_pos = (np.vstack(par_start_pos)
-                         .reshape(self.num_particles, 3, 1))
+        par_start_pos = self.particles.positions
         prev_time = 0
         for time_size in iter_chunksize(self.n_samples, t_chunk_size):
             if verbose:
