@@ -863,7 +863,7 @@ class ParticlesSimulation(object):
         # Load emission in chunks, and save only the final timestamps
         bg_rates = [None] * (len(max_rates) - 1) + [bg_rate]
         for i_start, i_end in iter_chunk_index(timeslice_size, t_chunksize):
-            _, em_chunk = self._sim_trajectories(timeslice_size, par_start_pos,
+            _, em_chunk = self._sim_trajectories(t_chunksize, par_start_pos,
                                                  rs,
                                                  total_emission=False,
                                                  save_pos=False, radial=False,
