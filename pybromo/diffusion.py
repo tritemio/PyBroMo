@@ -689,6 +689,30 @@ class ParticlesSimulation(object):
 
         return times_chunk, par_index_chunk
 
+    def _sim_timestamps_populations(self, emission, max_rates, populations,
+                                    bg_rates, i_start, rs, scale=10):
+            # Loop for each population
+            ts_chunk_pop_list, par_index_chunk_pop_list = [], []
+            for rate, pop, bg in zip(max_rates, populations, bg_rates):
+                emission_pop = emission[pop]
+                ts_chunk_pop, par_index_chunk_pop = \
+                    self._sim_timestamps(
+                        rate, bg, emission_pop, i_start, ip_start=pop.start,
+                        rs=rs, scale=scale, sort=False)
+
+                ts_chunk_pop_list.append(ts_chunk_pop)
+                par_index_chunk_pop_list.append(par_index_chunk_pop)
+
+            # Merge populations
+            times_chunk_s = np.hstack(ts_chunk_pop_list)
+            par_index_chunk_s = np.hstack(par_index_chunk_pop_list)
+
+            # Sort timestamps inside the merged chunk
+            index_sort = times_chunk_s.argsort(kind='mergesort')
+            times_chunk_s = times_chunk_s[index_sort]
+            par_index_chunk_s = par_index_chunk_s[index_sort]
+            return times_chunk_s, par_index_chunk_s
+
     def simulate_timestamps_mix(self, max_rates, populations, bg_rate,
                                 rs=None, seed=1, chunksize=2**16,
                                 comp_filter=None, overwrite=False,
@@ -761,25 +785,10 @@ class ParticlesSimulation(object):
         for i_start, i_end in iter_chunk_index(timeslice_size, t_chunksize):
             em_chunk = self.emission[:, i_start:i_end]
 
-            # Loop for each population
-            ts_chunk_pop_list, par_index_chunk_pop_list = [], []
-            for rate, pop, bg in zip(max_rates, populations, bg_rates):
-                em_chunk_pop = em_chunk[pop]
-                ts_chunk_pop, par_index_chunk_pop = self._sim_timestamps(
-                    rate, bg, em_chunk_pop, i_start, ip_start=pop.start,
-                    rs=rs, scale=scale, sort=False)
-
-                ts_chunk_pop_list.append(ts_chunk_pop)
-                par_index_chunk_pop_list.append(par_index_chunk_pop)
-
-            # Merge populations
-            times_chunk_s = np.hstack(ts_chunk_pop_list)
-            par_index_chunk_s = np.hstack(par_index_chunk_pop_list)
-
-            # Sort timestamps inside the merged chunk
-            index_sort = times_chunk_s.argsort(kind='mergesort')
-            times_chunk_s = times_chunk_s[index_sort]
-            par_index_chunk_s = par_index_chunk_s[index_sort]
+            times_chunk_s, par_index_chunk_s = \
+                self._sim_timestamps_populations(
+                    em_chunk, max_rates, populations, bg_rates, i_start,
+                    rs, scale)
 
             # Save sorted timestamps (suffix '_s') and corresponding particles
             self._timestamps.append(times_chunk_s)
