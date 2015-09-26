@@ -813,11 +813,12 @@ class ParticlesSimulation(object):
         self._timestamps.attrs['last_random_state'] = rs.get_state()
         self.ts_store.h5file.flush()
 
-    def simulate_timestamps_mix2(self, max_rates, populations, bg_rate,
-                                rs=None, seed=1, chunksize=2**16,
-                                comp_filter=None, overwrite=False,
-                                skip_existing=False, scale=10,
-                                path='./', t_chunksize=2**19, timeslice=None):
+    def simulate_timestamps_mix2(self, max_rates_d, max_rates_a,
+                                 populations, bg_rate_d, bg_rate_a,
+                                 rs=None, seed=1, chunksize=2**16,
+                                 comp_filter=None, overwrite=False,
+                                 skip_existing=False, scale=10,
+                                 path='./', t_chunksize=2**19, timeslice=None):
         """Compute timestamps for a mixture of 2 populations.
 
         The results are saved to disk and accessible as pytables arrays in
@@ -858,17 +859,32 @@ class ParticlesSimulation(object):
         if timeslice is not None:
             timeslice_size = timeslice // self.t_step
 
-        name = self._get_ts_name_mix(max_rates, populations, bg_rate, rs=rs)
-        kw = dict(name=name, clk_p=self.t_step / scale,
-                  max_rates=max_rates, bg_rate=bg_rate, populations=populations,
+        name_d = self._get_ts_name_mix(max_rates_d, populations, bg_rate_d, rs)
+        name_a = self._get_ts_name_mix(max_rates_a, populations, bg_rate_a, rs)
+
+        kw = dict(clk_p=self.t_step / scale,
+                  populations=populations,
                   num_particles=self.num_particles,
                   bg_particle=self.num_particles,
                   overwrite=overwrite, chunksize=chunksize)
         if comp_filter is not None:
             kw.update(comp_filter=comp_filter)
+
+        kw.update(name=name_d, max_rates=max_rates_d, bg_rate=bg_rate_d)
         try:
-            self._timestamps, self._tparticles = (self.ts_store
-                                                  .add_timestamps(**kw))
+            self._timestamps_d, self._tparticles_d = (self.ts_store
+                                                      .add_timestamps(**kw))
+        except ExistingArrayError as e:
+            if skip_existing:
+                print(' - Skipping already present timestamps array.')
+                return
+            else:
+                raise e
+
+        kw.update(name=name_a, max_rates=max_rates_a, bg_rate=bg_rate_a)
+        try:
+            self._timestamps_a, self._tparticles_a = (self.ts_store
+                                                      .add_timestamps(**kw))
         except ExistingArrayError as e:
             if skip_existing:
                 print(' - Skipping already present timestamps array.')
@@ -877,15 +893,17 @@ class ParticlesSimulation(object):
                 raise e
 
         self.ts_group._v_attrs['init_random_state'] = rs.get_state()
-        self._timestamps.attrs['init_random_state'] = rs.get_state()
-        self._timestamps.attrs['PyBroMo'] = __version__
-        self._timestamps.attrs['Diffusion'] = 1
+        self.ts_group.attrs['Diffusion'] = 1
+        self._timestamps_d.attrs['init_random_state'] = rs.get_state()
+        self._timestamps_d.attrs['PyBroMo'] = __version__
+        self._timestamps_a.attrs['PyBroMo'] = __version__
 
         print('- Start trajectories simulation - %s' % ctime(), flush=True)
         par_start_pos = self.particles.positions
 
         # Load emission in chunks, and save only the final timestamps
-        bg_rates = [None] * (len(max_rates) - 1) + [bg_rate]
+        bg_rates_d = [None] * (len(max_rates_d) - 1) + [bg_rate_d]
+        bg_rates_a = [None] * (len(max_rates_a) - 1) + [bg_rate_a]
         prev_time = 0
         for i_start, i_end in iter_chunk_index(timeslice_size, t_chunksize):
 
@@ -900,33 +918,25 @@ class ParticlesSimulation(object):
                                                  save_pos=False, radial=False,
                                                  wrap_func=wrap_periodic)
 
-            # Loop for each population
-            ts_chunk_pop_list, par_index_chunk_pop_list = [], []
-            for rate, pop, bg in zip(max_rates, populations, bg_rates):
-                em_chunk_pop = em_chunk[pop]
-                ts_chunk_pop, par_index_chunk_pop = self._sim_timestamps(
-                    rate, bg, em_chunk_pop, i_start, ip_start=pop.start,
-                    rs=rs, scale=scale, sort=False)
+            times_chunk_s_d, par_index_chunk_s_d = \
+                self._sim_timestamps_populations(
+                    em_chunk, max_rates_d, populations, bg_rates_d, i_start,
+                    rs, scale)
 
-                ts_chunk_pop_list.append(ts_chunk_pop)
-                par_index_chunk_pop_list.append(par_index_chunk_pop)
-
-            # Merge populations
-            times_chunk_s = np.hstack(ts_chunk_pop_list)
-            par_index_chunk_s = np.hstack(par_index_chunk_pop_list)
-
-            # Sort timestamps inside the merged chunk
-            index_sort = times_chunk_s.argsort(kind='mergesort')
-            times_chunk_s = times_chunk_s[index_sort]
-            par_index_chunk_s = par_index_chunk_s[index_sort]
+            times_chunk_s_a, par_index_chunk_s_a = \
+                self._sim_timestamps_populations(
+                    em_chunk, max_rates_a, populations, bg_rates_a, i_start,
+                    rs, scale)
 
             # Save sorted timestamps (suffix '_s') and corresponding particles
-            self._timestamps.append(times_chunk_s)
-            self._tparticles.append(par_index_chunk_s)
+            self._timestamps_d.append(times_chunk_s_d)
+            self._tparticles_d.append(par_index_chunk_s_d)
+            self._timestamps_a.append(times_chunk_s_a)
+            self._tparticles_a.append(par_index_chunk_s_a)
 
         # Save current random state so it can be resumed in the next session
         self.ts_group._v_attrs['last_random_state'] = rs.get_state()
-        self._timestamps.attrs['last_random_state'] = rs.get_state()
+        self._timestamps_d._v_attrs['last_random_state'] = rs.get_state()
         self.ts_store.h5file.flush()
         print('\n- End trajectories simulation - %s' % ctime(), flush=True)
 
