@@ -229,13 +229,13 @@ class TimestapSimulation:
         ts_d, _ = self.S.get_timestamps_part(self.name_timestamps_d)
         rs.set_state(ts_d.attrs['last_random_state'])
         self.hash_a = hash_(rs.get_state())[:6]   # needed by merge_da()
-        print('%s Acceptor timestamps - %s' % (header, ctime()), flush=True)
+        print('\n%s Acceptor timestamps - %s' % (header, ctime()), flush=True)
         self.S.simulate_timestamps_mix(
             populations = self.populations,
             max_rates = self.em_rates_a,
             bg_rate = self.bg_rate_a,
             **kwargs)
-        print('%s Completed. %s' % (header, ctime()), flush=True)
+        print('\n%s Completed. %s' % (header, ctime()), flush=True)
 
     @property
     def name_timestamps_d(self):
