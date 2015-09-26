@@ -660,7 +660,9 @@ class ParticlesSimulation(object):
         if max_counts == 0:
             return np.array([], dtype=np.int64), np.array([], dtype=np.int64)
 
-        ts_range = (np.arange(counts_chunk.shape[1]) + i_start) * scale
+        time_start = i_start * scale
+        time_stop = time_start + counts_chunk.shape[1] * scale
+        ts_range = np.arange(time_start, time_stop, scale, dtype='int64')
 
         # Loop for each particle to compute timestamps
         times_chunk_p = []
