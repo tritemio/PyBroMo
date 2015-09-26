@@ -782,6 +782,7 @@ class ParticlesSimulation(object):
         self._timestamps.attrs['init_random_state'] = rs.get_state()
         self._timestamps.attrs['PyBroMo'] = __version__
 
+        ts_list, part_list = [], []
         # Load emission in chunks, and save only the final timestamps
         bg_rates = [None] * (len(max_rates) - 1) + [bg_rate]
         prev_time = 0
@@ -800,8 +801,12 @@ class ParticlesSimulation(object):
                     rs, scale)
 
             # Save sorted timestamps (suffix '_s') and corresponding particles
-            self._timestamps.append(times_chunk_s)
-            self._tparticles.append(par_index_chunk_s)
+            ts_list.append(times_chunk_s)
+            part_list.append(par_index_chunk_s)
+
+        for ts, part in zip(ts_list, part_list):
+            self._timestamps.append(ts)
+            self._tparticles.append(part)
 
         # Save current random state so it can be resumed in the next session
         self.ts_group._v_attrs['last_random_state'] = rs.get_state()
