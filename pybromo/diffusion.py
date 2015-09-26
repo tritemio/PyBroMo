@@ -784,7 +784,14 @@ class ParticlesSimulation(object):
 
         # Load emission in chunks, and save only the final timestamps
         bg_rates = [None] * (len(max_rates) - 1) + [bg_rate]
+        prev_time = 0
         for i_start, i_end in iter_chunk_index(timeslice_size, t_chunksize):
+
+            curr_time = np.around(i_start * self.t_step, decimals=1)
+            if curr_time > prev_time:
+                print(' %.1fs' % curr_time, end='', flush=True)
+                prev_time = curr_time
+
             em_chunk = self.emission[:, i_start:i_end]
 
             times_chunk_s, par_index_chunk_s = \
