@@ -788,7 +788,7 @@ class ParticlesSimulation(object):
         prev_time = 0
         for i_start, i_end in iter_chunk_index(timeslice_size, t_chunksize):
 
-            curr_time = np.around(i_start * self.t_step, decimals=1)
+            curr_time = np.around(i_start * self.t_step, decimals=0)
             if curr_time > prev_time:
                 print(' %.1fs' % curr_time, end='', flush=True)
                 prev_time = curr_time
