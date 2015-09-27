@@ -502,7 +502,7 @@ class ParticlesSimulation(object):
             pos = np.cumsum(delta_pos, axis=-1, out=delta_pos)
             pos += start_pos[i]
 
-            # Coordinates wrapping using periodic boundary conditions
+            # Coordinates wrapping using the specified boundary conditions
             for coord in (0, 1, 2):
                 pos[coord] = wrap_func(pos[coord], *self.box.b[coord])
 
@@ -520,7 +520,7 @@ class ParticlesSimulation(object):
             if save_pos:
                 pos_save = np.vstack((Ro, Z)) if radial else pos
                 POS.append(pos_save[np.newaxis, :, :])
-            # Save last position as next starting position
+            # Update start_pos in-place for current particle
             start_pos[i] = pos[:, -1:]
         return POS, em
 
