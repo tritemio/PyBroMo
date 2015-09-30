@@ -900,9 +900,9 @@ class ParticlesSimulation(object):
                 raise e
 
         self.ts_group._v_attrs['init_random_state'] = rs.get_state()
-        self.ts_group.attrs['Diffusion'] = 1
         self._timestamps_d.attrs['init_random_state'] = rs.get_state()
         self._timestamps_d.attrs['PyBroMo'] = __version__
+        self._timestamps_a.attrs['init_random_state'] = rs.get_state()
         self._timestamps_a.attrs['PyBroMo'] = __version__
 
         # Load emission in chunks, and save only the final timestamps
@@ -939,7 +939,7 @@ class ParticlesSimulation(object):
         self._timestamps_d._v_attrs['last_random_state'] = rs.get_state()
         self.ts_store.h5file.flush()
 
-    def simulate_timestamps_mix2(self, max_rates_d, max_rates_a,
+    def simulate_timestamps_mix_da_online(self, max_rates_d, max_rates_a,
                                  populations, bg_rate_d, bg_rate_a,
                                  rs=None, seed=1, chunksize=2**16,
                                  comp_filter=None, overwrite=False,
