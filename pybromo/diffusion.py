@@ -829,11 +829,16 @@ class ParticlesSimulation(object):
         conventional particle number (last particle index + 1).
 
         Arguments:
-            max_rates (list): list of the peak max emission rate for each
-                population.
+            max_rates_d (list): list of the peak max emission rate in the
+                donor channel for each population.
+            max_rates_a (list): list of the peak max emission rate in the
+                acceptor channel for each population.
             populations (list of slices): slices to `self.particles`
                 defining each population.
-            bg_rate (float, cps): rate for a Poisson background process
+            bg_rate_d (float, cps): rate for a Poisson background process
+                in the donor channel.
+            bg_rate_a (float, cps): rate for a Poisson background process
+                in the acceptor channel.
             rs (RandomState object): random state object used as random number
                 generator. If None, use a random state initialized from seed.
             seed (uint): when `rs` is None, `seed` is used to initialize the
