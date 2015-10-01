@@ -720,10 +720,10 @@ class ParticlesSimulation(object):
                                 comp_filter=None, overwrite=False,
                                 skip_existing=False, scale=10,
                                 path='./', t_chunksize=None, timeslice=None):
-        """Compute timestamps for a mixture of 2 populations.
+        """Compute one timestamps array for a mixture of N populations.
 
         The results are saved to disk and accessible as pytables arrays in
-        `.timestamps` and `.tparticles`.
+        `._timestamps` and `._tparticles`.
         The background generated timestamps are assigned a
         conventional particle number (last particle index + 1).
 
@@ -821,10 +821,13 @@ class ParticlesSimulation(object):
                                    path='./', t_chunksize=2**19,
                                    timeslice=None):
 
-        """Compute timestamps for a mixture of 2 populations.
+        """Compute D and A timestamps arrays for a mixture of N populations.
+
+        This method reads the emission from disk once, and generates a pair
+        of timestamps arrays (e.g. donor and acceptor) from each chunk.
 
         The results are saved to disk and accessible as pytables arrays in
-        `.timestamps` and `.tparticles`.
+        `._timestamps_d/a` and `._tparticles_d/a`.
         The background generated timestamps are assigned a
         conventional particle number (last particle index + 1).
 
@@ -945,10 +948,14 @@ class ParticlesSimulation(object):
                                  comp_filter=None, overwrite=False,
                                  skip_existing=False, scale=10,
                                  path='./', t_chunksize=2**19, timeslice=None):
-        """Compute timestamps for a mixture of 2 populations.
+        """Compute D and A timestamps arrays for a mixture of N populations.
+
+        This method simulates the diffusion, emission and generates a pair
+        of timestamps arrays (e.g. donor and acceptor) all at the same time.
+        This method avoids saving the trajectories to disk.
 
         The results are saved to disk and accessible as pytables arrays in
-        `.timestamps` and `.tparticles`.
+        `._timestamps_d/a` and `._tparticles_d/a`.
         The background generated timestamps are assigned a
         conventional particle number (last particle index + 1).
 
