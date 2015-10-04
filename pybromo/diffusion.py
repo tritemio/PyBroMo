@@ -90,7 +90,7 @@ class Particles(object):
         return [Particle(D=D, x0=x0, y0=y0, z0=z0)
                 for x0, y0, z0 in zip(X0, Y0, Z0)]
 
-    def __init__(self, num_particles, D, box, rs=None, seed=1):
+    def __init__(self, num_particles, D, box, rs=None, seed=1, particles=None):
         """A set of `N` Particle() objects with random position in `box`.
 
         Arguments:
@@ -101,13 +101,18 @@ class Particles(object):
                 generator. If None, use a random state initialized from seed.
             seed (uint): when `rs` is None, `seed` is used to initialize the
                 random state. `seed` is ignored when `rs` is not None.
+            particles (list or None): when not None, initialize the object from
+                this list that must containing only `Particle` objects.
         """
         if rs is None:
             rs = np.random.RandomState(seed=seed)
         self.rs = rs
         self.init_random_state = rs.get_state()
         self.box = box
-        self._plist = self._generate(num_particles, D, box, rs)
+        if particles is None:
+            self._plist = self._generate(num_particles, D, box, rs)
+        else:
+            self._plist = list(particles)
         self.rs_hash = hash_(self.init_random_state)[:3]
 
     def add(self, num_particles, D):
