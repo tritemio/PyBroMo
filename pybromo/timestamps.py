@@ -117,7 +117,7 @@ class TimestapSimulation:
 
     - `em_rates_d`, `em_rates_a`, `D_values`, `populations`, `traj_filename`.
 
-    Attributes created by .rum():
+    Attributes created by .run():
 
     - `hash_d`, `hash_a`
 
@@ -203,6 +203,12 @@ class TimestapSimulation:
     def filepath(self):
         return Path(self.S.store.filepath.parent, self.filename)
 
+    def _calc_hash_da(self, rs):
+        """Compute hash of D and A timestamps for single-step D+A case.
+        """
+        self.hash_d = hash_(rs.get_state())[:6]
+        self.hash_a = self.hash_d
+
     def run(self, rs, overwrite=True, skip_existing=False, path=None,
             chunksize=None):
         """Compute timestamps for current populations."""
@@ -249,8 +255,7 @@ class TimestapSimulation:
         header = ' - Mixture Simulation:'
 
         # Donor timestamps hash is from the input RandomState
-        self.hash_d = hash_(rs.get_state())[:6]  # needed by merge_da()
-        self.hash_a = self.hash_d
+        self._calc_hash_da(rs)
         print('%s Donor + Acceptor timestamps - %s' %
               (header, ctime()), flush=True)
         self.S.simulate_timestamps_mix_da(

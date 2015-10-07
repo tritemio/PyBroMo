@@ -8,6 +8,7 @@ sns.set_style('whitegrid')
 
 
 class ScrollPlotter:
+    """Base class for plots scrolling with a QT scrollbar."""
     scale = 1
     max_page_steps = 40
     def __init__(self, time_size, duration, t_step, decimate):
