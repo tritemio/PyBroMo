@@ -248,6 +248,7 @@ class ParticlesSimulation(object):
                 # Load the timestamps
                 S.ts_store = TimestampStore(file_ts, mode=mode)
                 S.ts_group = S.ts_store.h5file.root.timestamps
+                print(' - Found matching timestamps.')
         return S
 
     @staticmethod
@@ -451,7 +452,7 @@ class ParticlesSimulation(object):
         self.emission = self.store.add_emission(**kwargs)
         self.position = self.store.add_position(radial=radial, **kwargs)
 
-    def open_store_timestamp(self, path='./', chunksize=2**19,
+    def open_store_timestamp(self, path=None, chunksize=2**19,
                              chunkslice='bytes', mode='w'):
         """Open and setup the on-disk storage file (pytables HDF5 file).
 
@@ -459,6 +460,8 @@ class ParticlesSimulation(object):
         """ + self.__DOCS_STORE_ARGS___
         if hasattr(self, 'ts_store'):
             return
+        if path is None:
+            path = self.store.filepath.parent
         self.ts_store = self._open_store(TimestampStore,
                                          prefix=ParticlesSimulation._PREFIX_TS,
                                          path=path,
@@ -724,7 +727,7 @@ class ParticlesSimulation(object):
                                 rs=None, seed=1, chunksize=2**16,
                                 comp_filter=None, overwrite=False,
                                 skip_existing=False, scale=10,
-                                path='./', t_chunksize=None, timeslice=None):
+                                path=None, t_chunksize=None, timeslice=None):
         """Compute one timestamps array for a mixture of N populations.
 
         The results are saved to disk and accessible as pytables arrays in
@@ -823,7 +826,7 @@ class ParticlesSimulation(object):
                                    rs=None, seed=1, chunksize=2**16,
                                    comp_filter=None, overwrite=False,
                                    skip_existing=False, scale=10,
-                                   path='./', t_chunksize=2**19,
+                                   path=None, t_chunksize=2**19,
                                    timeslice=None):
 
         """Compute D and A timestamps arrays for a mixture of N populations.
@@ -952,7 +955,8 @@ class ParticlesSimulation(object):
                                  rs=None, seed=1, chunksize=2**16,
                                  comp_filter=None, overwrite=False,
                                  skip_existing=False, scale=10,
-                                 path='./', t_chunksize=2**19, timeslice=None):
+                                 path=None, t_chunksize=2**19,
+                                 timeslice=None):
         """Compute D and A timestamps arrays for a mixture of N populations.
 
         This method simulates the diffusion, emission and generates a pair
