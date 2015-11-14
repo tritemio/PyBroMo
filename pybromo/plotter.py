@@ -256,14 +256,14 @@ class TrackEmPlotter(ScrollPlotter):
 
     def init_plot(self):
         fig, AX = self.fig, self.AX
-        plt.subplots_adjust(left=0.05, right=0.93, top=0.95, bottom=0.09,
+        plt.subplots_adjust(left=0.06, right=0.96, top=0.95, bottom=0.09,
                             wspace=0.05)
         self.title_suffix = "Total: %.1f s, Visualized: %.2f ms" % (
                             self.S.t_step*self.S.n_samples, self.duration*1e3)
 
-        AX[1].set_xlabel("z (um)")
-        AX[0].set_xlabel("x (um)")
-        AX[0].set_ylabel("y (um)")
+        AX[1].set_xlabel("z (μm)")
+        AX[0].set_xlabel("x (μm)")
+        AX[0].set_ylabel("y (μm)")
         AX[2].set_xlabel("Time (ms)")
         self.plot_psf()
 
