@@ -15,7 +15,6 @@ from . import plot
 from . import plotter
 
 from .utils import hdf5
-from .tests import test_diffusion
 
 from .diffusion import Box, Particles, ParticlesSimulation, hash_
 from .psflib import GaussianPSF, NumericPSF
