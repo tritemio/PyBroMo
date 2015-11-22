@@ -30,7 +30,7 @@ alternatively, use an analytical Gaussian-shaped PSF.
 An overview of the architecture of the simulator can be found
 [below](#architecture).
 
-The user documentation is provided in a series of [IPython Notebook](http://ipython.org/notebook.html)
+The user documentation is provided in a series of [Jupyter](http://jupyter.org) notebooks
 (see **[Usage examples](#usage-examples)**).
 
 # Feedback
