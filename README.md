@@ -1,5 +1,12 @@
 # PyBroMo Overview
 
+<div style="height:160px;">
+<img title="Numerical PSF" style="float: left; " src="https://cloud.githubusercontent.com/assets/4156237/11383966/b5781438-92c0-11e5-982c-0499b95dac43.png" align=left height = 160 />
+<img title="Numerical PSF" style="float: left; " src="https://cloud.githubusercontent.com/assets/4156237/11383974/c3020bae-92c0-11e5-86d7-0f41055e2095.png" align=left height = 160 />
+<img title="Numerical PSF" style="float: left; " src="https://cloud.githubusercontent.com/assets/4156237/11384109/d925bb00-92c1-11e5-96bc-a46f8e39f613.png" align=left height = 160 />
+</div>
+
+
 **[PyBroMo](http://tritemio.github.io/PyBroMo/)** is an open-source simulator
 for Brownian-motion diffusion and photon emission of fluorescent particles
 excited by a diffraction limited laser spot.
@@ -108,7 +115,7 @@ This work was supported by NIH grants R01 GM069709 and R01 GM095904.
 
 PyBroMo - A single molecule FRET diffusion simulator in confocal geometry.
 
-Copyright (C) 2013  Antonino Ingargiola - <tritemio@gmail.com>
+Copyright (C) 2013-2015  Antonino Ingargiola - <tritemio@gmail.com>
 
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License
