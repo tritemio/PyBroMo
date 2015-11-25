@@ -1,9 +1,9 @@
 # PyBroMo Overview
 
 <div>
-<img title="Numerical PSF" src="https://cloud.githubusercontent.com/assets/4156237/11383966/b5781438-92c0-11e5-982c-0499b95dac43.png" height="100" />
-<img title="Particles Trajectories" src="https://cloud.githubusercontent.com/assets/4156237/11383974/c3020bae-92c0-11e5-86d7-0f41055e2095.png" height="100" />
-<img title="Simulated smFRET timetrace, bursts and FRET histogram" src="https://cloud.githubusercontent.com/assets/4156237/11384109/d925bb00-92c1-11e5-96bc-a46f8e39f613.png" height="100" />
+<img title="Numerical PSF" src="https://cloud.githubusercontent.com/assets/4156237/11383966/b5781438-92c0-11e5-982c-0499b95dac43.png" height="110" />
+<img title="Particles Trajectories" src="https://cloud.githubusercontent.com/assets/4156237/11383974/c3020bae-92c0-11e5-86d7-0f41055e2095.png" height="110" />
+<img title="Simulated smFRET timetrace, bursts and FRET histogram" src="https://cloud.githubusercontent.com/assets/4156237/11384620/11051666-92c6-11e5-871e-041e71839f22.png" height="110" />
 </div>
 
 **[PyBroMo](http://tritemio.github.io/PyBroMo/)** is an open-source simulator
