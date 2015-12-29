@@ -1,5 +1,7 @@
 # PyBroMo Overview
 
+[![DOI](https://zenodo.org/badge/5991/tritemio/PyBroMo.svg)](https://zenodo.org/badge/latestdoi/5991/tritemio/PyBroMo)
+
 <div>
 <img title="Numerical PSF" src="https://cloud.githubusercontent.com/assets/4156237/11383966/b5781438-92c0-11e5-982c-0499b95dac43.png" height="110" />
 <img title="Particles Trajectories" src="https://cloud.githubusercontent.com/assets/4156237/11383974/c3020bae-92c0-11e5-86d7-0f41055e2095.png" height="110" />
