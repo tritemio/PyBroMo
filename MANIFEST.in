@@ -1,2 +1,4 @@
 include versioneer.py
 include pybromo/_version.py
+include README.md
+include LICENSE.txt
