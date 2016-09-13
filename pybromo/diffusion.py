@@ -168,25 +168,30 @@ class Particles(object):
 
 
 def wrap_periodic(a, a1, a2):
-    """Folds all the values of `a` outside [a1..a2] inside that intervall.
+    """Folds all the values of `a` outside [a1..a2] inside that interval.
     This function is used to apply periodic boundary conditions.
     """
     a -= a1
     wrapped = np.mod(a, a2 - a1) + a1
     return wrapped
 
+
 def wrap_mirror(a, a1, a2):
-    """Folds all the values of `a` outside [a1..a2] inside that intervall.
+    """Folds all the values of `a` outside [a1..a2] inside that interval.
     This function is used to apply mirror-like boundary conditions.
     """
     a[a > a2] = a2 - (a[a > a2] - a2)
     a[a < a1] = a1 + (a1 - a[a < a1])
     return a
 
+
 class NoMatchError(Exception):
     pass
+
+
 class MultipleMatchesError(Exception):
     pass
+
 
 class ParticlesSimulation(object):
     """Class that performs the Brownian motion simulation of N particles.
@@ -400,7 +405,7 @@ class ParticlesSimulation(object):
                 chunksize is the size of the last dimension. In this latter
                 case 2-D or 3-D arrays have bigger chunks than 1-D arrays.
             overwrite (bool): if True, overwrite the file if already exists.
-                All the previoulsy stored data in that file will be lost.
+                All the previously stored data in that file will be lost.
         """[1:]
 
     def _open_store(self, store, prefix='', path='./', chunksize=2**19,
@@ -476,7 +481,7 @@ class ParticlesSimulation(object):
         """Simulate (in-memory) `time_size` steps of trajectories.
 
         Simulate Brownian motion diffusion and emission of all the particles.
-        Uses the attrbutes: num_particles, sigma_1d, box, psf.
+        Uses the attributes: num_particles, sigma_1d, box, psf.
 
         Arguments:
             time_size (int): number of time steps to be simulated.
@@ -681,7 +686,7 @@ class ParticlesSimulation(object):
             for v in range(1, max_counts + 1):
                 times_c_ip.append(ts_range[counts_chunk_ip >= v])
 
-            # Stack the timstamps from different "counts"
+            # Stack the timestamps from different "counts"
             t = np.hstack(times_c_ip)
             # Append current particle
             times_chunk_p.append(t)
@@ -730,7 +735,7 @@ class ParticlesSimulation(object):
                                 path=None, t_chunksize=None, timeslice=None):
         """Compute one timestamps array for a mixture of N populations.
 
-        The results are saved to disk and accessible as pytables arrays in
+        Timestamp data are saved to disk and accessible as pytables arrays in
         `._timestamps` and `._tparticles`.
         The background generated timestamps are assigned a
         conventional particle number (last particle index + 1).
@@ -834,7 +839,7 @@ class ParticlesSimulation(object):
         This method reads the emission from disk once, and generates a pair
         of timestamps arrays (e.g. donor and acceptor) from each chunk.
 
-        The results are saved to disk and accessible as pytables arrays in
+        Timestamp data are saved to disk and accessible as pytables arrays in
         `._timestamps_d/a` and `._tparticles_d/a`.
         The background generated timestamps are assigned a
         conventional particle number (last particle index + 1).
@@ -963,7 +968,7 @@ class ParticlesSimulation(object):
         of timestamps arrays (e.g. donor and acceptor) all at the same time.
         This method avoids saving the trajectories to disk.
 
-        The results are saved to disk and accessible as pytables arrays in
+        Timestamp data are saved to disk and accessible as pytables arrays in
         `._timestamps_d/a` and `._tparticles_d/a`.
         The background generated timestamps are assigned a
         conventional particle number (last particle index + 1).
@@ -1018,7 +1023,7 @@ class ParticlesSimulation(object):
                                                       .add_timestamps(**kw))
         except ExistingArrayError as e:
             if skip_existing:
-                print(' - Skipping already present timestamps array.')
+                print(' - Skipping, timestamps array already present.')
                 return
             else:
                 raise e
@@ -1029,7 +1034,7 @@ class ParticlesSimulation(object):
                                                       .add_timestamps(**kw))
         except ExistingArrayError as e:
             if skip_existing:
-                print(' - Skipping already present timestamps array.')
+                print(' - Skipping, timestamps array already present.')
                 return
             else:
                 raise e

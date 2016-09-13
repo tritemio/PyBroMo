@@ -16,7 +16,7 @@ For an example of all the needed parameters see `pybromo_ts_params_example`.
 
 """
 
-# This dict defines a univoque set of timestamps
+# This dict defines a unique set of timestamps
 # It can be passed to get_bromo_fnames_da() as **kwargs
 pybromo_ts_params_example = dict(
     d_em_kHz = 20.,

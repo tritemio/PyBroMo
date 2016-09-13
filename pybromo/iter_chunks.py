@@ -27,6 +27,7 @@ def iter_chunksize(num_samples, chunksize):
     if last_chunksize > 0:
         yield last_chunksize
 
+
 def iter_chunk_slice(num_samples, chunksize):
     """Iterator used to iterate in chunks over an array of size `num_samples`.
 
@@ -37,6 +38,7 @@ def iter_chunk_slice(num_samples, chunksize):
     for c_size in iter_chunksize(num_samples, chunksize):
         yield slice(i, i + c_size)
         i += c_size
+
 
 def iter_chunk_index(num_samples, chunksize):
     """Iterator used to iterate in chunks over an array of size `num_samples`.
@@ -49,6 +51,7 @@ def iter_chunk_index(num_samples, chunksize):
         yield i, i + c_size
         i += c_size
 
+
 def reduce_chunk(func, array):
     """Reduce with `func`, chunk by chunk, the passed pytable `array`.
     """
@@ -56,6 +59,7 @@ def reduce_chunk(func, array):
     for slice in iter_chunk_slice(array.shape[-1], array.chunkshape[-1]):
         res.append(func(array[..., slice]))
     return func(res)
+
 
 def map_chunk(func, array, out_array):
     """Map with `func`, chunk by chunk, the input pytable `array`.
