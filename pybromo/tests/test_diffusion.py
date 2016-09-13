@@ -4,9 +4,6 @@ Module containing automated unit tests for PyBroMo.
 Running the tests requires `py.test`.
 """
 
-from __future__ import division
-from builtins import range, zip
-
 import pytest
 import numpy as np
 

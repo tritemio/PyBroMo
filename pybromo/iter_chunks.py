@@ -11,8 +11,6 @@ Copyright (C) 2013-2014 Antonino Ingargiola tritemio@gmail.com
 
 This module implements iterator functions to loop over arrays in chunks.
 """
-from __future__ import print_function, absolute_import, division
-from builtins import range, zip
 
 import numpy as np
 

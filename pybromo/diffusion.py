@@ -9,9 +9,6 @@ This module contains the core classes and functions to perform the
 Brownian motion and timestamps simulation.
 """
 
-from __future__ import print_function, absolute_import, division
-from builtins import range, zip
-
 import os
 import hashlib
 import itertools

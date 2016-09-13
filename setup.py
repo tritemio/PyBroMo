@@ -3,7 +3,7 @@ import versioneer
 
 project_name = 'pybromo'
 
-## Metadata
+# Metadata
 long_description = """
 PyBroMo
 ==========
@@ -23,7 +23,7 @@ setup(name = project_name,
       url = 'http://tritemio.github.io/PyBroMo/',
       download_url = 'https://github.com/tritemio/PyBroMo',
       install_requires = ['numpy', 'setuptools', 'tables', 'matplotlib',
-                          'future', 'phconvert'],
+                          'phconvert'],
       license = 'GPLv2',
       description = ('Simulator for confocal single-molecule fluorescence '
                      'experiments.'),

@@ -11,13 +11,11 @@ This module contains functions to work with timestamps.
 import numpy as np
 from time import ctime
 from pathlib import Path
-
 import phconvert as phc
 
+from .diffusion import hash_
 from ._version import get_versions
 __version__ = get_versions()['version']
-
-from .diffusion import hash_
 
 
 def merge_da(ts_d, ts_par_d, ts_a, ts_par_a):

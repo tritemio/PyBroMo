@@ -11,8 +11,6 @@ an analytical formula (i.e. Gaussian) or by interpolation of a precomputed PSF.
 File part of PyBroMo: a single molecule diffusion simulator.
 Copyright (C) 2013-2014 Antonino Ingargiola tritemio@gmail.com
 """
-from __future__ import print_function, absolute_import, division
-from builtins import range, zip, dict
 
 import pkg_resources
 import os
