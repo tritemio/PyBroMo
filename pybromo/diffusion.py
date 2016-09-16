@@ -144,7 +144,8 @@ class Particles(object):
 
     @classmethod
     def load(cls, json_str):
-        particles = json.load(json_str)['particles']
+        particles = [Particle.from_dict(p)
+                     for p in json.loads(json_str)['particles']]
         # This returned obj will throw an error if the user calls .add()
         return cls(particles=particles, num_particles=None, D=None, box=None)
 
