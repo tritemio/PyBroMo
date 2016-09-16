@@ -14,6 +14,7 @@ import hashlib
 import itertools
 from pathlib import Path
 from time import ctime
+import json
 
 import numpy as np
 from numpy import array, sqrt
@@ -130,7 +131,7 @@ class Particles(object):
         self.rs_hash = hash_(self.init_random_state)[:3]
 
     def add(self, num_particles, D):
-        """Add particles with diffusion coeff `D` at random positions.
+        """Add particles with diffusion coefficient `D` at random positions.
         """
         self._plist += self._generate(num_particles, D, box=self.box,
                                       rs=self.rs)
@@ -138,8 +139,14 @@ class Particles(object):
     def to_list(self):
         return self._plist.copy()
 
-    def dump(self):
-        return {'particles': [v.to_dict() for v in self.to_list()]}
+    def dumps(self):
+        return json.dumps({'particles': [v.to_dict() for v in self.to_list()]})
+
+    @classmethod
+    def load(cls, json_str):
+        particles = json.load(json_str)['particles']
+        # This returned obj will throw an error if the user calls .add()
+        return cls(particles=particles, num_particles=None, D=None, box=None)
 
     def __iter__(self):
         return iter(self._plist)
@@ -246,7 +253,8 @@ class ParticlesSimulation(object):
 
         names = ['t_step', 't_max', 'EID', 'ID']
         kwargs = {name: store.numeric_params[name] for name in names}
-        S = ParticlesSimulation(particles=P, box=box, psf=psf, **kwargs)
+        S = ParticlesSimulation(particles=Particles.load(P), box=box, psf=psf,
+                                **kwargs)
 
         # Emulate S.open_store_traj()
         S.store = store
@@ -323,7 +331,7 @@ class ParticlesSimulation(object):
 
     @property
     def diffusion_coeff(self):
-        return np.array([par.D for par in self.particles])
+        return self.particles.diffusion_coeff
 
     @property
     def num_particles(self):
@@ -441,7 +449,7 @@ class ParticlesSimulation(object):
         self.chunksize = chunksize
         nparams.update(chunksize=(chunksize, 'Chunksize for arrays'))
         store_fname = '%s_%s.hdf5' % (prefix, self.compact_name())
-        attr_params = dict(particles=self.particles, box=self.box)
+        attr_params = dict(particles=self.particles.dumps(), box=self.box)
         kwargs = dict(path=path, nparams=nparams, attr_params=attr_params,
                       mode=mode)
         store = store(store_fname, **kwargs)
