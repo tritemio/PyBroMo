@@ -18,15 +18,14 @@ from time import ctime
 import numpy as np
 from numpy import array, sqrt
 
-from ._version import get_versions
-__version__ = get_versions()['version']
-
 from .storage import TrajectoryStore, TimestampStore, ExistingArrayError
 from .iter_chunks import iter_chunksize, iter_chunk_index
 from .psflib import NumericPSF
 
+from ._version import get_versions
+__version__ = get_versions()['version']
 
-## Avogadro constant
+# Avogadro constant
 NA = 6.022141e23    # [mol^-1]
 
 
@@ -36,8 +35,10 @@ def get_seed(seed, ID=0, EID=0):
     """
     return seed + EID + 100 * ID
 
+
 def hash_(x):
     return hashlib.sha1(repr(x).encode()).hexdigest()
+
 
 class Box:
     """The simulation box"""
@@ -46,6 +47,15 @@ class Box:
         self.y1, self.y2 = y1, y2
         self.z1, self.z2 = z1, z2
         self.b = array([[x1, x2], [y1, y2], [z1, z2]])
+
+    def to_dict(self):
+        return {'x1': self.x1, 'x2': self.x2,
+                'y1': self.y1, 'y2': self.y2,
+                'z1': self.z1, 'z2': self.z2}
+
+    @classmethod
+    def from_dict(cls, data):
+        return cls(**data)
 
     @property
     def volume(self):
@@ -73,6 +83,13 @@ class Particle(object):
 
     def __eq__(self, other_particle):
         return (self.r0 == other_particle.r0).all()
+
+    def to_dict(self):
+        return {'D': self.D, 'x0': self.x0, 'y0': self.y0, 'z0': self.z0}
+
+    @classmethod
+    def from_dict(cls, params):
+        return cls(params['D'], params['x0'], params['y0'], params['z0'])
 
 
 class Particles(object):
@@ -120,6 +137,9 @@ class Particles(object):
 
     def to_list(self):
         return self._plist.copy()
+
+    def dump(self):
+        return {'particles': [v.to_dict() for v in self.to_list()]}
 
     def __iter__(self):
         return iter(self._plist)

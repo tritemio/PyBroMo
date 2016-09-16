@@ -105,7 +105,7 @@ class BaseStore(object):
             self.h5file.create_array('/parameters', name, obj=val,
                                      title=value[1])
         for name, value in attr_params.items():
-                self.h5file.set_node_attr('/parameters', name, value)
+            self.h5file.set_node_attr('/parameters', name, value)
 
     @property
     def numeric_params(self):
