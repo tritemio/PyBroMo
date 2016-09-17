@@ -11,17 +11,19 @@ class ScrollPlotter:
     """Base class for plots scrolling with a QT scrollbar."""
     scale = 1
     max_page_steps = 40
+
     def __init__(self, time_size, duration, t_step, decimate):
         self.time_size = time_size
         self.t_step = t_step
         self.duration = duration
         self.duration_steps = duration // t_step
         self.decimate = decimate
-        self.num_points = self.duration_steps // decimate
+        self.num_points = int(self.duration_steps // decimate)
         self.page_step = 1
         if self.time_size / self.duration_steps > self.max_page_steps:
-            self.page_step = int(np.ceil(self.time_size / self.duration_steps / self.max_page_steps))
-        self.scroll_step = 1/4
+            self.page_step = int(np.ceil(self.time_size / self.duration_steps /
+                                 self.max_page_steps))
+        self.scroll_step = 1 / 4
         self.smin = 0
         self.smax = self.time_size
 
@@ -49,7 +51,7 @@ class ScrollPlotter:
             self.slider.setMaximum(self.smax * self.scale)
         self.slider.setSingleStep(self.duration_steps * self.scale * self.scroll_step)
         self.slider.setPageStep(self.duration_steps * self.scale * self.page_step)
-        self.slider.setValue(self.smin * self.scale) # set the initial position
+        self.slider.setValue(self.smin * self.scale)  # set the initial position
         self.slider.valueChanged.connect(self.slider_changed)
         parent.addWidget(self.slider)
 
@@ -79,12 +81,12 @@ class EmissionPlotter(ScrollPlotter):
         super().__init__(S.n_samples, duration, S.t_step, decimate)
 
     def create_figure(self):
-        self.fig, self.ax = plt.subplots(figsize=(12,6))
+        self.fig, self.ax = plt.subplots(figsize=(12, 6))
 
     def init_plot(self):
         fig, ax = self.fig, self.ax
         self.title_suffix = "Total: %.1f s, Visualized: %.2f ms" % (
-                            self.S.t_step*self.S.n_samples, self.duration*1e3)
+            self.S.t_step * self.S.n_samples, self.duration * 1e3)
 
         ax.set_xlabel("Time (ms)")
 
@@ -115,9 +117,9 @@ class EmissionPlotter(ScrollPlotter):
         if slice_ is None:
             slice_ = (0, self.duration_steps, self.decimate)
         slice_ = slice(*slice_[:2])
-        assert (slice_.stop - slice_.start)//self.decimate == self.num_points
+        assert (slice_.stop - slice_.start) // self.decimate == self.num_points
         emission = self.S.emission[:, slice_]
-        dec_shape = (emission.shape[0], emission.shape[1]//self.decimate,
+        dec_shape = (emission.shape[0], emission.shape[1] // self.decimate,
                      self.decimate)
         emission = emission.reshape(*dec_shape).max(axis=-1)
 
@@ -143,7 +145,7 @@ class TrackEmPlotterR(ScrollPlotter):
         super().__init__(S.n_samples, duration, S.t_step, decimate)
 
     def create_figure(self):
-        self.fig = plt.figure(figsize=(6,8))
+        self.fig = plt.figure(figsize=(6, 8))
         gs = gridspec.GridSpec(2, 1, height_ratios=[2, 1])
         ax1 = self.fig.add_subplot(gs[0, 0])
         ax3 = self.fig.add_subplot(gs[1, :])
@@ -159,7 +161,7 @@ class TrackEmPlotterR(ScrollPlotter):
     def init_plot(self):
         fig, AX = self.fig, self.AX
         self.title_suffix = "Total: %.1f s, Visualized: %.2f ms" % (
-                            self.S.t_step*self.S.n_samples, self.duration*1e3)
+            self.S.t_step * self.S.n_samples, self.duration * 1e3)
 
         AX[0].set_xlabel("r (um)")
         AX[0].set_ylabel("z (um)")
@@ -171,7 +173,7 @@ class TrackEmPlotterR(ScrollPlotter):
         par_counts = [c[1] for c in self.S.particles.diffusion_coeff_counts]
 
         em_y = np.zeros(self.num_points)
-        em_x = np.arange(self.num_points)*self.S.t_step*self.decimate*1e3
+        em_x = np.arange(self.num_points) * self.S.t_step * self.decimate * 1e3
         lines_rz, lines_em = [], []
         for ip in self.particles:
             color = colors[0] if ip < par_counts[0] else colors[1]
@@ -203,7 +205,7 @@ class TrackEmPlotterR(ScrollPlotter):
         if slice_ is None:
             slice_ = (0, self.duration_steps, self.decimate)
         slice_ = slice(*slice_)
-        assert (slice_.stop - slice_.start)//self.decimate == self.num_points
+        assert (slice_.stop - slice_.start) // self.decimate == self.num_points
         pos = self.position[:, :, slice_]
         emission = self.S.emission[:, slice_]
 
@@ -212,7 +214,7 @@ class TrackEmPlotterR(ScrollPlotter):
                                   self.lines_rz,
                                   self.lines_em):
             r, z = pos[ip, 0], pos[ip, 1]
-            l_rz.set_data(r*1e6, z*1e6)
+            l_rz.set_data(r * 1e6, z * 1e6)
             l_em.set_ydata(emission[ip])
             ax0.draw_artist(l_rz)
             ax1.draw_artist(l_em)
@@ -220,6 +222,7 @@ class TrackEmPlotterR(ScrollPlotter):
         self.title.set_text("t = %5.1fs %s" % (time, self.title_suffix))
         self.fig.draw_artist(self.title)
         self.fig.canvas.blit(self.fig.bbox)
+
 
 class TrackEmPlotter(ScrollPlotter):
     def __init__(self, S, particles=None, color_pop=True,
@@ -233,7 +236,7 @@ class TrackEmPlotter(ScrollPlotter):
         super().__init__(S.n_samples, duration, S.t_step, decimate)
 
     def create_figure(self):
-        self.fig = plt.figure(figsize=(11,8))
+        self.fig = plt.figure(figsize=(11, 8))
         gs = gridspec.GridSpec(2, 2, height_ratios=[2, 1])
         ax1 = self.fig.add_subplot(gs[0, 0])
         ax2 = self.fig.add_subplot(gs[0, 1], sharey=ax1)
@@ -248,7 +251,7 @@ class TrackEmPlotter(ScrollPlotter):
         kwargs = dict(interpolation='nearest', cmap=cmap, vmin=1e-1, zorder=1)
         self.AX[1].imshow(psf.T, extent=(-6, 6, -4, 4), **kwargs)
 
-        x = np.concatenate((-self.S.psf.xi[:0:-1], self.S.psf.xi))*1e-6
+        x = np.concatenate((-self.S.psf.xi[:0:-1], self.S.psf.xi)) * 1e-6
         X, Y = np.meshgrid(x, x)
         R = np.sqrt(X**2 + Y**2)
         psf_xy = self.S.psf.eval_xz(R, 0)
@@ -259,7 +262,7 @@ class TrackEmPlotter(ScrollPlotter):
         plt.subplots_adjust(left=0.06, right=0.96, top=0.95, bottom=0.09,
                             wspace=0.05)
         self.title_suffix = "Total: %.1f s, Visualized: %.2f ms" % (
-                            self.S.t_step*self.S.n_samples, self.duration*1e3)
+            self.S.t_step * self.S.n_samples, self.duration * 1e3)
 
         AX[1].set_xlabel("z (μm)")
         AX[0].set_xlabel("x (μm)")
@@ -272,7 +275,7 @@ class TrackEmPlotter(ScrollPlotter):
         par_counts = [c[1] for c in self.S.particles.diffusion_coeff_counts]
 
         em_y = np.zeros(self.num_points)
-        em_x = np.arange(self.num_points)*self.S.t_step*self.decimate*1e3
+        em_x = np.arange(self.num_points) * self.S.t_step * self.decimate * 1e3
         lines_xy, lines_zy, lines_em = [], [], []
         for ip in self.particles:
             color = colors[0] if ip < par_counts[0] else colors[1]
@@ -307,7 +310,7 @@ class TrackEmPlotter(ScrollPlotter):
         if slice_ is None:
             slice_ = (0, self.duration_steps, self.decimate)
         slice_ = slice(*slice_)
-        assert (slice_.stop - slice_.start)//self.decimate == self.num_points
+        assert (slice_.stop - slice_.start) // self.decimate == self.num_points
         pos = self.position[:, :, slice_]
         emission = self.S.emission[:, slice_]
 
@@ -316,8 +319,8 @@ class TrackEmPlotter(ScrollPlotter):
                                         self.lines_xy, self.lines_zy,
                                         self.lines_em):
             x, y, z = pos[ip, 0], pos[ip, 1], pos[ip, 2]
-            l_xy.set_data(x*1e6, y*1e6)
-            l_zy.set_data(z*1e6, y*1e6)
+            l_xy.set_data(x * 1e6, y * 1e6)
+            l_zy.set_data(z * 1e6, y * 1e6)
             l_em.set_ydata(emission[ip])
             self.AX[0].draw_artist(l_xy)
             self.AX[1].draw_artist(l_zy)
