@@ -6,6 +6,7 @@ Running the tests requires `py.test`.
 
 import pytest
 import numpy as np
+import json
 
 import pybromo as pbm
 
@@ -28,6 +29,7 @@ def randomstate_equal(rs1, rs2):
         equal &= test
     return equal
 
+
 def create_diffusion_sim():
     rs = np.random.RandomState(_SEED)
     Du = 12.0            # um^2 / s
@@ -43,6 +45,28 @@ def create_diffusion_sim():
                          rs=rs)
     S.store.close()
     return S.hash()[:6]
+
+
+def test_Box():
+    box = pbm.Box(0, 1, 0, 1, 0, 2)
+    assert (box.b == np.array([[0, 1], [0, 1], [0, 2]])).all()
+    assert box.volume == 2
+    assert box.volume_L == 2000
+    box.__repr__()  # smoke test
+    box_dict = box.to_dict()
+    box2 = pbm.Box(**box_dict)
+    assert (box.b == box2.b).all()
+    box_json = box.to_json()
+    box3 = pbm.Box(**json.loads(box_json))
+    assert (box.b == box3.b).all()
+
+
+def test_Particle():
+    a = pbm.diffusion.Particle(D=0.1, x0=0, y0=0, z0=0)
+    a_dict = a.to_dict()
+    b = pbm.diffusion.Particle(**a_dict)
+    assert a.D == b.D and a.x0 == b.x0 and a.y0 == b.y0 and a.z0 == b.z0
+
 
 def test_Particles():
     rs = np.random.RandomState(_SEED)
@@ -65,6 +89,12 @@ def test_Particles():
     assert randomstate_equal(P.rs, rs.get_state())
     assert randomstate_equal(P.init_random_state, np.random.RandomState(_SEED))
     assert not randomstate_equal(P.init_random_state, P.rs)
+
+    # Test JSON serialization
+    P_json = P.to_json()
+    P3 = pbm.Particles.from_json(P_json)
+    assert P.to_list() == P3.to_list()
+
 
 def test_diffusion_sim_random_state():
     # Initialize the random state

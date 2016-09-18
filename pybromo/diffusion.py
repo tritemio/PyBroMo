@@ -54,9 +54,8 @@ class Box:
                 'y1': self.y1, 'y2': self.y2,
                 'z1': self.z1, 'z2': self.z2}
 
-    @classmethod
-    def from_dict(cls, data):
-        return cls(**data)
+    def to_json(self):
+        return json.dumps(self.to_dict())
 
     @property
     def volume(self):
@@ -87,10 +86,6 @@ class Particle(object):
 
     def to_dict(self):
         return {'D': self.D, 'x0': self.x0, 'y0': self.y0, 'z0': self.z0}
-
-    @classmethod
-    def from_dict(cls, params):
-        return cls(params['D'], params['x0'], params['y0'], params['z0'])
 
 
 class Particles(object):
@@ -139,13 +134,12 @@ class Particles(object):
     def to_list(self):
         return self._plist.copy()
 
-    def dumps(self):
+    def to_json(self):
         return json.dumps({'particles': [v.to_dict() for v in self.to_list()]})
 
     @classmethod
-    def load(cls, json_str):
-        particles = [Particle.from_dict(p)
-                     for p in json.loads(json_str)['particles']]
+    def from_json(cls, json_str):
+        particles = [Particle(**p) for p in json.loads(json_str)['particles']]
         # This returned obj will throw an error if the user calls .add()
         return cls(particles=particles, num_particles=None, D=None, box=None)
 
@@ -254,8 +248,8 @@ class ParticlesSimulation(object):
 
         names = ['t_step', 't_max', 'EID', 'ID']
         kwargs = {name: store.numeric_params[name] for name in names}
-        S = ParticlesSimulation(particles=Particles.load(P), box=box, psf=psf,
-                                **kwargs)
+        S = ParticlesSimulation(particles=Particles.from_json(P), box=box,
+                                psf=psf, **kwargs)
 
         # Emulate S.open_store_traj()
         S.store = store
@@ -450,7 +444,7 @@ class ParticlesSimulation(object):
         self.chunksize = chunksize
         nparams.update(chunksize=(chunksize, 'Chunksize for arrays'))
         store_fname = '%s_%s.hdf5' % (prefix, self.compact_name())
-        attr_params = dict(particles=self.particles.dumps(), box=self.box)
+        attr_params = dict(particles=self.particles.to_json(), box=self.box)
         kwargs = dict(path=path, nparams=nparams, attr_params=attr_params,
                       mode=mode)
         store = store(store_fname, **kwargs)
