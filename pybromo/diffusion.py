@@ -42,7 +42,7 @@ def hash_(x):
 
 
 class Box:
-    """The simulation box"""
+    """The simulation box. Sizes in meters."""
     def __init__(self, x1, x2, y1, y2, z1, z2):
         self.x1, self.x2 = x1, x2
         self.y1, self.y2 = y1, y2
@@ -160,7 +160,7 @@ class Particles(object):
 
     @property
     def positions(self):
-        """Start positions for all the particles. Shape (N, 3, 1)."""
+        """Initial position for each particle. Shape (N, 3, 1)."""
         return np.vstack([p.r0 for p in self]).reshape(len(self), 3, 1)
 
     @property
@@ -291,7 +291,7 @@ class ParticlesSimulation(object):
             # a single random stream when simulating timestamps multiple times
             if 'last_random_state' in group._v_attrs:
                 rs.set_state(group._v_attrs['last_random_state'])
-                print("INFO: Random state set to last saved state in '%s'." % \
+                print("INFO: Random state set to last saved state in '%s'." %
                       group._v_name)
             else:
                 print("INFO: Random state initialized from seed (%d)." % seed)
@@ -520,9 +520,10 @@ class ParticlesSimulation(object):
             POS (list): list of 3D trajectories arrays (3 x time_size)
             em (array): array of emission (total or per-particle)
         """
+        time_size = int(time_size)
         num_particles = self.num_particles
         if total_emission:
-            em = np.zeros((time_size), dtype=np.float32)
+            em = np.zeros(time_size, dtype=np.float32)
         else:
             em = np.zeros((num_particles, time_size), dtype=np.float32)
 
