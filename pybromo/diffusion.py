@@ -76,13 +76,16 @@ class Box:
 
 class Particle(object):
     """Class to describe a single particle."""
-    def __init__(self, D, x0=0, y0=0, z0=0):
+    def __init__(self, D, x0, y0, z0):
         self.D = D   # diffusion coefficient in SI units, m^2/s
         self.x0, self.y0, self.z0 = x0, y0, z0
-        self.r0 = np.array([x0, y0, z0])
 
-    def __eq__(self, other_particle):
-        return (self.r0 == other_particle.r0).all()
+    @property
+    def r0(self):
+        return np.array([self.x0, self.y0, self.z0])
+
+    def __eq__(self, other):
+        return (self.r0 == other.r0).all() and self.D == other.D
 
     def to_dict(self):
         return {'D': self.D, 'x0': self.x0, 'y0': self.y0, 'z0': self.z0}
@@ -135,7 +138,7 @@ class Particles(object):
         return self._plist.copy()
 
     def to_json(self):
-        return json.dumps({'particles': [v.to_dict() for v in self.to_list()]})
+        return json.dumps({'particles': [v.to_dict() for v in self]})
 
     @classmethod
     def from_json(cls, json_str):
