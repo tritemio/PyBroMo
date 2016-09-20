@@ -641,6 +641,8 @@ class ParticlesSimulation(object):
                               timeslice=None):
         if timeslice is None:
             timeslice = self.t_max
+        if populations is None:
+            populations = [slice(0, self.num_particles)]
         s = []
         for ipop, (max_rate, pop) in enumerate(zip(max_rates, populations)):
             kw = dict(npop = ipop + 1, max_rate = max_rate,
@@ -735,27 +737,30 @@ class ParticlesSimulation(object):
 
     def _sim_timestamps_populations(self, emission, max_rates, populations,
                                     bg_rates, i_start, rs, scale=10):
-            # Loop for each population
-            ts_chunk_pop_list, par_index_chunk_pop_list = [], []
-            for rate, pop, bg in zip(max_rates, populations, bg_rates):
-                emission_pop = emission[pop]
-                ts_chunk_pop, par_index_chunk_pop = \
-                    self._sim_timestamps(
-                        rate, bg, emission_pop, i_start, ip_start=pop.start,
-                        rs=rs, scale=scale, sort=False)
+        if populations is None:
+            populations = [slice(0, self.num_particles)]
 
-                ts_chunk_pop_list.append(ts_chunk_pop)
-                par_index_chunk_pop_list.append(par_index_chunk_pop)
+        # Loop for each population
+        ts_chunk_pop_list, par_index_chunk_pop_list = [], []
+        for rate, pop, bg in zip(max_rates, populations, bg_rates):
+            emission_pop = emission[pop]
+            ts_chunk_pop, par_index_chunk_pop = \
+                self._sim_timestamps(
+                    rate, bg, emission_pop, i_start, ip_start=pop.start,
+                    rs=rs, scale=scale, sort=False)
 
-            # Merge populations
-            times_chunk_s = np.hstack(ts_chunk_pop_list)
-            par_index_chunk_s = np.hstack(par_index_chunk_pop_list)
+            ts_chunk_pop_list.append(ts_chunk_pop)
+            par_index_chunk_pop_list.append(par_index_chunk_pop)
 
-            # Sort timestamps inside the merged chunk
-            index_sort = times_chunk_s.argsort(kind='mergesort')
-            times_chunk_s = times_chunk_s[index_sort]
-            par_index_chunk_s = par_index_chunk_s[index_sort]
-            return times_chunk_s, par_index_chunk_s
+        # Merge populations
+        times_chunk_s = np.hstack(ts_chunk_pop_list)
+        par_index_chunk_s = np.hstack(par_index_chunk_pop_list)
+
+        # Sort timestamps inside the merged chunk
+        index_sort = times_chunk_s.argsort(kind='mergesort')
+        times_chunk_s = times_chunk_s[index_sort]
+        par_index_chunk_s = par_index_chunk_s[index_sort]
+        return times_chunk_s, par_index_chunk_s
 
     def simulate_timestamps_mix(self, max_rates, populations, bg_rate,
                                 rs=None, seed=1, chunksize=2**16,
