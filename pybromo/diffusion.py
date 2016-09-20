@@ -489,7 +489,12 @@ class ParticlesSimulation(object):
         if hasattr(self, 'ts_store'):
             return
         if path is None:
-            path = self.store.filepath.parent
+            if hasattr(self, 'store'):
+                # Use same folder of the trajectory file
+                path = self.store.filepath.parent
+            else:
+                # No trajectory file, use current folder
+                path = '.'
         self.ts_store = self._open_store(TimestampStore,
                                          prefix=ParticlesSimulation._PREFIX_TS,
                                          path=path,
