@@ -314,7 +314,9 @@ class TimestapSimulation:
             num_polarization_ch = 1,
             num_split_ch = 1,
             modulated_excitation = False,
-            lifetime = False)
+            lifetime = False,
+            excitation_alternated=(False,),
+            excitation_cw=(True,))
 
         provenance = dict(filename=self.S.ts_store.filename,
                           software='PyBroMo', software_version=__version__)
