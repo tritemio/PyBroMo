@@ -1,4 +1,7 @@
-from PyQt4 import QtGui, QtCore
+try:
+    from PyQt4 import QtGui, QtCore
+except ImportError:
+    from PyQt5 import QtGui, QtCore 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -65,6 +68,7 @@ class ScrollPlotter:
 
     def init_plot(self):
         pass
+    
 
     def update(self, slice_=None):
         pass
