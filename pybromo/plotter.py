@@ -1,7 +1,9 @@
 try:
     from PyQt4 import QtGui, QtCore
+    from PyQt2.QtGui import QToolBar, QSlider
 except ImportError:
-    from PyQt5 import QtGui, QtCore 
+    from PyQt5 import QtGui, QtCore
+    from PyQt5.QtWidgets import QToolBar, QSlider
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -34,7 +36,7 @@ class ScrollPlotter:
         # Retrive the QMainWindow used by current figure and add a toolbar
         # to host the new widgets
         QMainWin = self.fig.canvas.parent()
-        toolbar = QtGui.QToolBar(QMainWin)
+        toolbar = QToolBar(QMainWin)
         #QMainWin.addToolBar(QtCore.Qt.BottomToolBarArea, toolbar)
         QMainWin.addToolBar(QtCore.Qt.TopToolBarArea, toolbar)
         # Create the slider and spinbox for x-axis scrolling in toolbar
@@ -43,8 +45,8 @@ class ScrollPlotter:
         self.update()
 
     def set_slider(self, parent):
-        self.slider = QtGui.QSlider(QtCore.Qt.Horizontal, parent=parent)
-        self.slider.setTickPosition(QtGui.QSlider.TicksAbove)
+        self.slider = QSlider(QtCore.Qt.Horizontal, parent=parent)
+        self.slider.setTickPosition(QSlider.TicksAbove)
         self.slider.setTickInterval((self.smax - self.smin) / 10. * self.scale)
 
         self.slider.setMinimum(self.smin * self.scale)
@@ -68,7 +70,7 @@ class ScrollPlotter:
 
     def init_plot(self):
         pass
-    
+
 
     def update(self, slice_=None):
         pass
