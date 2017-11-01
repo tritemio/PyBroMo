@@ -33,6 +33,8 @@ class ScrollPlotter:
         self.smax = self.time_size
 
         self.create_figure()
+        self.fig.patch.set_facecolor("white")
+        #self.canvas.setStyleSheet("background-color:transparent;")
         # Retrive the QMainWindow used by current figure and add a toolbar
         # to host the new widgets
         QMainWin = self.fig.canvas.parent()
