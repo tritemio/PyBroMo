@@ -154,7 +154,7 @@ This work was supported by NIH grants R01 GM069709 and R01 GM095904.
 
 PyBroMo - A single molecule FRET diffusion simulator in confocal geometry.
 
-Copyright (C) 2013-2015  Antonino Ingargiola - <tritemio@gmail.com>
+Copyright (C) 2013-2017  Antonino Ingargiola - <tritemio@gmail.com>
 
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License
