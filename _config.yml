@@ -1,0 +1,8 @@
+title: PyBroMo
+description: A single-molecule brownian motion diffusion smFRET simulator in confocal geometry.
+google_analytics: UA-44142116-1
+show_downloads: true
+theme: jekyll-theme-slate
+
+gems:
+  - jekyll-mentions
