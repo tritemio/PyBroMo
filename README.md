@@ -1,3 +1,8 @@
+> **WARNING**: This repo have moved to 
+> - https://github.com/OpenSMFS/PyBroMo
+>
+> Please refer to the new location for issues and updates.
+
 # PyBroMo Overview
 
 [![DOI](https://zenodo.org/badge/5991/tritemio/PyBroMo.svg)](https://zenodo.org/badge/latestdoi/5991/tritemio/PyBroMo)
